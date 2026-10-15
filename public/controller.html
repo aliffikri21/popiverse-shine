@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POPIVERSE: Kontroler Karakter</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Fredoka', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: #8FD8F7;
+            background-image: url('bg.jpg');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 380px;
+            background: #FFFFFF;
+            border: 4px solid #2D3142;
+            border-radius: 32px;
+            padding: 24px;
+            box-shadow: 0 12px 0 #2D3142;
+            text-align: center;
+        }
+
+        h2 {
+            color: #FF5E7E;
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+
+        p {
+            color: #5C6479;
+            font-size: 0.9rem;
+            margin-bottom: 18px;
+        }
+
+        /* Badge Identitas Kampus & Prodi */
+        .creator-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #F0F5FF;
+            border: 3px solid #2D3142;
+            border-radius: 20px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 0 #2D3142;
+            text-align: left;
+        }
+
+        .creator-logo {
+            width: 46px;
+            height: 46px;
+            object-fit: contain;
+            flex-shrink: 0;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+        }
+
+        .creator-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.25;
+        }
+
+        .creator-tag {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #FF5E7E;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .creator-dept {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #1E293B;
+        }
+
+        .creator-univ {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #0250B3;
+        }
+
+        input[type="text"] {
+            padding: 14px 16px;
+            border: 3px solid #2D3142;
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+            background: #F9F9FB;
+        }
+
+        .color-picker {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .color-dot {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 3px solid #2D3142;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .color-dot.selected {
+            transform: scale(1.22);
+            box-shadow: 0 4px 0 #2D3142;
+        }
+
+        .shape-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .shape-btn {
+            flex: 1;
+            padding: 12px;
+            border: 3px solid #2D3142;
+            border-radius: 16px;
+            background: #F3F4F6;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .shape-btn.selected {
+            background: #FFE66D;
+            box-shadow: 0 4px 0 #2D3142;
+        }
+
+        .big-btn {
+            width: 100%;
+            padding: 16px;
+            border: 4px solid #2D3142;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 7px 0 #2D3142;
+            transition: transform 0.08s, box-shadow 0.08s;
+            margin-bottom: 12px;
+        }
+
+        .big-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 1px 0 #2D3142;
+        }
+
+        .btn-pink {
+            background: #FF6B9D;
+            color: #fff;
+        }
+
+        .btn-mint {
+            background: #4ECDC4;
+            color: #2D3142;
+        }
+
+        .btn-yellow {
+            background: #FFE66D;
+            color: #2D3142;
+        }
+
+        /* D-Pad Gerakan */
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .pad-btn {
+            padding: 16px 0;
+            font-size: 1.4rem;
+            background: #E0E7FF;
+            border: 3px solid #2D3142;
+            border-radius: 16px;
+            box-shadow: 0 5px 0 #2D3142;
+            cursor: pointer;
+        }
+
+        .pad-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2D3142;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LAYAR 1: PEMBUATAN KARAKTER -->
+    <div class="card" id="setup-screen">
+        <!-- Logo & Branding Kampus / Program Studi -->
+        <div class="creator-badge">
+            <img src="logo-teramedia.png" alt="Logo Teramedia Politeknik Dewantara" class="creator-logo">
+            <div class="creator-info">
+                <span class="creator-tag">✨ Karya Mahasiswa</span>
+                <strong class="creator-dept">Prodi Teknologi Rekayasa Multimedia</strong>
+                <span class="creator-univ">Politeknik Dewantara</span>
+            </div>
+        </div>
+
+        <h2>🐣 Buat Jeli-mu!</h2>
+        <p>Karaktermu akan langsung muncul di layar TV pameran</p>
+
+        <input type="text" id="player-name" placeholder="Ketik Nama Lucumu..." maxlength="12">
+
+        <p style="margin-bottom:8px; font-weight:700;">Pilih Warna Jeli:</p>
+        <div class="color-picker" id="color-list">
+            <div class="color-dot selected" data-color="#FF6B9D" style="background:#FF6B9D;"></div>
+            <div class="color-dot" data-color="#4ECDC4" style="background:#4ECDC4;"></div>
+            <div class="color-dot" data-color="#FFE66D" style="background:#FFE66D;"></div>
+            <div class="color-dot" data-color="#A855F7" style="background:#A855F7;"></div>
+            <div class="color-dot" data-color="#FF9F1C" style="background:#FF9F1C;"></div>
+        </div>
+
+        <div class="shape-selector">
+            <div class="shape-btn selected" data-shape="sphere">⚪ Bulat Gemoy</div>
+            <div class="shape-btn" data-shape="box">🟦 Kotak Jeli</div>
+        </div>
+
+        <button class="big-btn btn-pink" id="btn-join">🚀 LOMPAT KE PULAU!</button>
+    </div>
+
+    <!-- LAYAR 2: GAMEPAD KONTROLER LIVE -->
+    <div class="card hidden" id="gamepad-screen">
+        <h2 id="display-name">Halo!</h2>
+        <p>Kendalikan karaktermu di layar utama sekarang!</p>
+
+        <div class="dpad">
+            <div></div>
+            <button class="pad-btn" onclick="move(0, -1.5)">⬆️</button>
+            <div></div>
+            <button class="pad-btn" onclick="move(-1.5, 0)">⬅️</button>
+            <button class="pad-btn" onclick="move(0, 1.5)">⬇️</button>
+            <button class="pad-btn" onclick="move(1.5, 0)">➡️</button>
+        </div>
+
+        <button class="big-btn btn-mint" id="btn-jump">🦘 LOMPAT TINGGI!</button>
+        <button class="big-btn btn-yellow" id="btn-dance">💃 GOYANG SPIN!</button>
+        <button class="big-btn btn-pink" id="btn-random-color">🌈 GANTI WARNA ACAK</button>
+
+        <!-- Footer Identitas Karya -->
+        <div class="creator-badge" style="margin-top: 14px; margin-bottom: 0; padding: 8px 12px; justify-content: center;">
+            <img src="logo-teramedia.png" alt="Logo Teramedia Politeknik Dewantara" class="creator-logo" style="width: 32px; height: 32px;">
+            <div class="creator-info">
+                <span class="creator-tag" style="font-size: 0.65rem;">✨ Karya Mahasiswa TRM</span>
+                <span class="creator-univ" style="font-size: 0.74rem;">Politeknik Dewantara</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let selectedColor = '#FF6B9D';
+        let selectedShape = 'sphere';
+
+        // Pilih Warna
+        document.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+                dot.classList.add('selected');
+                selectedColor = dot.dataset.color;
+            });
+        });
+
+        // Pilih Bentuk
+        document.querySelectorAll('.shape-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedShape = btn.dataset.shape;
+            });
+        });
+
+        // Gabung ke Pulau 3D
+        document.getElementById('btn-join').addEventListener('click', () => {
+            const name = document.getElementById('player-name').value.trim() || 'Si Gemoy';
+            socket.emit('join-island', { name, color: selectedColor, shape: selectedShape });
+
+            document.getElementById('display-name').innerText = `👾 ${name}`;
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('gamepad-screen').classList.remove('hidden');
+        });
+
+        // Aksi Tombol Gamepad
+        function move(dx, dz) {
+            if (navigator.vibrate) navigator.vibrate(25); // Efek getar di HP
+            socket.emit('player-action', { type: 'move', dx, dz });
+        }
+
+        document.getElementById('btn-jump').addEventListener('click', () => {
+            if (navigator.vibrate) navigator.vibrate(40);
+            socket.emit('player-action', { type: 'jump' });
+        });
+
+        document.getElementById('btn-dance').addEventListener('click', () => {
+            if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+            socket.emit('player-action', { type: 'dance' });
+        });
+
+        document.getElementById('btn-random-color').addEventListener('click', () => {
+            const colors = ['#FF6B9D', '#4ECDC4', '#FFE66D', '#A855F7', '#FF9F1C', '#2EC4B6'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            socket.emit('player-action', { type: 'color', color: randomColor });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POPIVERSE: Layar Utama Pameran 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: #8FD8F7;
+            background-image: url('bg.jpg');
+            background-size: cover;
+            background-position: center 40%;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #canvas3d {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+
+        /* UI Overlay Lucu & Colorful (Claymorphism) */
+        .ui-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 28px;
+        }
+
+        .toy-card {
+            pointer-events: auto;
+            background: #FFFDF9;
+            border: 4px solid #2D3142;
+            border-radius: 28px;
+            padding: 20px 26px;
+            box-shadow: 0 10px 0 #2D3142, 0 15px 25px rgba(0, 0, 0, 0.18);
+        }
+
+        .title-badge h1 {
+            font-size: 2.2rem;
+            color: #FF5E7E;
+            text-shadow: 2px 2px 0 #2D3142;
+            letter-spacing: 1px;
+            line-height: 1.1;
+        }
+
+        .title-badge p {
+            font-size: 0.95rem;
+            color: #5C6479;
+            margin-top: 4px;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.12));
+            flex-shrink: 0;
+        }
+
+        .brand-sub {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #0250B3;
+            margin-top: 2px;
+        }
+
+        .player-pill {
+            display: inline-block;
+            margin-top: 10px;
+            background: #FFE66D;
+            border: 3px solid #2D3142;
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-weight: 700;
+            color: #2D3142;
+        }
+
+        /* Kartu QR Code di Pojok Kanan */
+        .qr-card {
+            text-align: center;
+            width: 230px;
+        }
+
+        .qr-card h3 {
+            color: #2D3142;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .qr-box {
+            background: #fff;
+            border: 3px dashed #FF5E7E;
+            border-radius: 18px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .qr-box img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .url-text {
+            font-size: 0.78rem;
+            color: #FF5E7E;
+            word-break: break-all;
+            font-weight: 700;
+        }
+
+        /* Tombol Simulasi Pengunjung untuk Testing di IDE */
+        .demo-btn {
+            margin-top: 12px;
+            width: 100%;
+            padding: 10px;
+            background: #4ECDC4;
+            color: #2D3142;
+            border: 3px solid #2D3142;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #2D3142;
+            transition: transform 0.1s;
+        }
+
+        .demo-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #2D3142;
+        }
+
+        .btn-group-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-group-row .demo-btn {
+            margin-top: 0;
+            flex: 1;
+            padding: 9px 4px;
+            font-size: 0.82rem;
+        }
+
+        .btn-spawn {
+            background: #4ECDC4;
+        }
+
+        .btn-reset-bots {
+            background: #FFE66D;
+            color: #2D3142;
+        }
+
+        .btn-reset-all {
+            background: #FF6B9D;
+            color: #FFFFFF;
+            font-size: 0.8rem;
+            padding: 8px 10px;
+            margin-top: 8px;
+        }
+
+        /* Notifikasi Lucu Saat Terpental / Respawn */
+        .game-toast {
+            position: fixed;
+            top: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-30px);
+            background: #FFFDF9;
+            border: 3px solid #2D3142;
+            padding: 10px 24px;
+            border-radius: 99px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #FF5E7E;
+            box-shadow: 0 6px 0 #2D3142, 0 10px 20px rgba(0,0,0,0.15);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        .game-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="canvas3d"></canvas>
+    <div id="game-toast" class="game-toast"></div>
+
+    <div class="ui-overlay">
+        <div class="toy-card title-badge">
+            <div class="brand-container">
+                <img src="logo-teramedia.png" alt="Logo Teramedia Politeknik Dewantara" class="brand-logo">
+                <div>
+                    <h1>🎈 POPIVERSE 3D</h1>
+                    <p>Karya Mahasiswa Prodi Teknologi Rekayasa Multimedia</p>
+                    <p class="brand-sub">Politeknik Dewantara</p>
+                </div>
+            </div>
+            <div class="player-pill">👾 Pemain di Pulau: <span id="player-count">0</span></div>
+        </div>
+
+        <div class="toy-card qr-card">
+            <h3>📱 Scan & Masuk!</h3>
+            <div class="qr-box">
+                <img id="qr-img" src="" alt="QR Code Pameran">
+            </div>
+            <div class="url-text" id="join-url">Memuat alamat IP...</div>
+            <div class="btn-group-row">
+                <button class="demo-btn btn-spawn" id="btn-spawn-bot">🤖 + Tambah Bot</button>
+                <button class="demo-btn btn-reset-bots" id="btn-reset-bots">🧹 Reset Bot</button>
+            </div>
+            <button class="demo-btn btn-reset-all" id="btn-reset-all">💥 Hapus Semua Karakter</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const characters = {}; // Menyimpan objek 3D tiap pemain
+
+        // =========================================================================
+        // 1. SETUP DUNIA 3D COLORFUL (THREE.JS)
+        // =========================================================================
+        const canvas = document.getElementById('canvas3d');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 14, 22);
+        camera.lookAt(0, 1, 0);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // Pencahayaan Ceria & Cahaya Matahari Satu Arah dari Kanan Atas
+        const ambientLight = new THREE.HemisphereLight(0xffffff, 0xffd166, 0.85);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff8ee, 1.05);
+        dirLight.position.set(16, 26, 12); // Posisi awal dari kanan atas
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+
+        // Frustum luas agar bayangan tetap utuh saat sumber cahaya bergeser mengikuti gyro mouse
+        dirLight.shadow.camera.left = -16;
+        dirLight.shadow.camera.right = 16;
+        dirLight.shadow.camera.top = 16;
+        dirLight.shadow.camera.bottom = -16;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 85;
+        dirLight.shadow.bias = -0.0003;
+        dirLight.shadow.radius = 2.2; // Bayangan lembut realistis
+
+        scene.add(dirLight);
+        dirLight.target.position.set(0, 0, 0);
+        scene.add(dirLight.target);
+
+        // =========================================================================
+        // 2. MEMBUAT PULAU JELI & POHON MAINAN (TOY-CORE ENVIRONMENT)
+        // =========================================================================
+        const islandGroup = new THREE.Group();
+        scene.add(islandGroup);
+
+        // Rumput Hijau Mint
+        const grassGeo = new THREE.CylinderGeometry(10, 9.2, 1.6, 48);
+        const grassMat = new THREE.MeshStandardMaterial({ color: 0x56E39F, roughness: 0.4 });
+        const grassMesh = new THREE.Mesh(grassGeo, grassMat);
+        grassMesh.position.y = -0.8;
+        grassMesh.receiveShadow = true;
+        islandGroup.add(grassMesh);
+
+        // Tanah Cokelat Karamel
+        const soilGeo = new THREE.CylinderGeometry(9.2, 6.5, 3.5, 48);
+        const soilMat = new THREE.MeshStandardMaterial({ color: 0xF4A261, roughness: 0.6 });
+        const soilMesh = new THREE.Mesh(soilGeo, soilMat);
+        soilMesh.position.y = -3.3;
+        soilMesh.receiveShadow = true;
+        islandGroup.add(soilMesh);
+
+        // Fungsi Membuat Pohon Permen Bulat
+        function createCuteTree(x, z, foliageColor) {
+            const tree = new THREE.Group();
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.25, 0.4, 1.6, 16),
+                new THREE.MeshStandardMaterial({ color: 0xE76F51, roughness: 0.7 })
+            );
+            trunk.position.y = 0.8;
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            tree.add(trunk);
+
+            const foliage = new THREE.Mesh(
+                new THREE.SphereGeometry(1.15, 24, 24),
+                new THREE.MeshStandardMaterial({ color: foliageColor, roughness: 0.35 })
+            );
+            foliage.position.y = 2.1;
+            foliage.castShadow = true;
+            foliage.receiveShadow = true;
+            tree.add(foliage);
+
+            tree.position.set(x, 0, z);
+            islandGroup.add(tree);
+        }
+
+        createCuteTree(-6.5, -4, 0xFF6B9D); // Pohon Pink
+        createCuteTree(6.8, -3.5, 0xFFE66D); // Pohon Kuning
+        createCuteTree(-5, 5.5, 0x4ECDC4);  // Pohon Mint
+        createCuteTree(5.5, 5, 0xFF9F1C);   // Pohon Oranye
+
+        // =========================================================================
+        // 3. FUNGSI PEMBUAT KARAKTER 3D LUCU + LABEL NAMA DI ATAS KEPALA
+        // =========================================================================
+        function createNameSprite(nameText) {
+            const c = document.createElement('canvas');
+            c.width = 256; c.height = 64;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = 'rgba(45, 49, 66, 0.85)';
+            ctx.beginPath();
+            ctx.roundRect(16, 8, 224, 48, 24);
+            ctx.fill();
+            ctx.font = 'bold 26px sans-serif';
+            ctx.fillStyle = '#FFE66D';
+            ctx.textAlign = 'center';
+            ctx.fillText(nameText.substring(0, 12), 128, 41);
+
+            const texture = new THREE.CanvasTexture(c);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(2.8, 0.7, 1);
+            sprite.position.y = 2.4;
+            return sprite;
+        }
+
+        // =========================================================================
+        // 3. SISTEM EKSPRESI WAJAH LUCU (NORMAL, SENYUM GIGI, MATA X, DLL)
+        // =========================================================================
+        function drawFaceTexture(ctx, expression) {
+            ctx.clearRect(0, 0, 256, 256);
+
+            // Pipi Merona Halus (Blush Pink)
+            ctx.fillStyle = 'rgba(255, 77, 126, 0.75)';
+            ctx.beginPath();
+            ctx.ellipse(54, 136, 17, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(202, 136, 17, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#2D3142';
+            ctx.fillStyle = '#2D3142';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (expression === 'knocked_out') {
+                // ==========================================
+                // 1. MATA X LUCU SAAT JATUH DARI PULAU
+                // ==========================================
+                ctx.lineWidth = 7;
+                // X kiri
+                ctx.beginPath();
+                ctx.moveTo(64, 88); ctx.lineTo(96, 120);
+                ctx.moveTo(96, 88); ctx.lineTo(64, 120);
+                ctx.stroke();
+
+                // X kanan
+                ctx.beginPath();
+                ctx.moveTo(160, 88); ctx.lineTo(192, 120);
+                ctx.moveTo(192, 88); ctx.lineTo(160, 120);
+                ctx.stroke();
+
+                // Mulut wavy bergelombang pusing (~)
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(108, 148);
+                ctx.quadraticCurveTo(118, 138, 128, 148);
+                ctx.quadraticCurveTo(138, 158, 148, 148);
+                ctx.stroke();
+
+                // Keringat panik lucu
+                ctx.fillStyle = '#4ECDC4';
+                ctx.beginPath();
+                ctx.arc(206, 82, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else if (expression === 'victory_laugh' || expression === 'victory_teeth') {
+                // ==========================================
+                // 2. TERTAWA TERBAHAK-BAHAK HINGGA KELIHATAN GIGI 😁😆
+                // ==========================================
+                // Mata terpejam tertawa lebar (> <) yang sangat ekspresif
+                ctx.lineWidth = 7;
+                // Mata kiri (>):
+                ctx.beginPath();
+                ctx.moveTo(64, 96);
+                ctx.lineTo(84, 110);
+                ctx.lineTo(64, 124);
+                ctx.stroke();
+
+                // Mata kanan (<):
+                ctx.beginPath();
+                ctx.moveTo(192, 96);
+                ctx.lineTo(172, 110);
+                ctx.lineTo(192, 124);
+                ctx.stroke();
+
+                // Kerutan tawa lucu di samping mata
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(90, 110); ctx.lineTo(98, 110);
+                ctx.moveTo(166, 110); ctx.lineTo(158, 110);
+                ctx.stroke();
+
+                // Air mata tawa gembira (Tears of joy) di ujung mata 💧
+                ctx.fillStyle = '#4ECDC4';
+                ctx.beginPath();
+                ctx.arc(52, 114, 5, 0, Math.PI * 2);
+                ctx.arc(204, 114, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Rongga mulut tertawa terbahak-bahak yang sangat lebar
+                ctx.lineWidth = 6;
+                ctx.fillStyle = '#9E0025';
+                ctx.beginPath();
+                ctx.arc(128, 134, 30, 0, Math.PI);
+                ctx.fill();
+                ctx.stroke();
+
+                // Deretan gigi putih kartun rapi di bagian atas
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(102, 134, 52, 13);
+                ctx.strokeRect(102, 134, 52, 13);
+
+                // Garis pemisah gigi
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(115, 134); ctx.lineTo(115, 147);
+                ctx.moveTo(128, 134); ctx.lineTo(128, 147);
+                ctx.moveTo(141, 134); ctx.lineTo(141, 147);
+                ctx.stroke();
+
+                // Lidah merah muda imut bergetar tertawa di bawah
+                ctx.fillStyle = '#FF758F';
+                ctx.beginPath();
+                ctx.arc(128, 158, 16, Math.PI, 0);
+                ctx.fill();
+                ctx.stroke();
+
+            } else if (expression === 'victory_smile') {
+                // ==========================================
+                // 3. MELOMPAT-LOMPAT SAMBIL TERSENYUM GEMBIRA
+                // ==========================================
+                // Mata melengkung tertawa gembira (^ ^)
+                ctx.lineWidth = 7;
+                ctx.beginPath();
+                ctx.arc(80, 112, 18, Math.PI * 1.15, Math.PI * 1.85);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(176, 112, 18, Math.PI * 1.15, Math.PI * 1.85);
+                ctx.stroke();
+
+                // Mulut tertawa lebar bahagia
+                ctx.fillStyle = '#E63946';
+                ctx.beginPath();
+                ctx.arc(128, 138, 22, 0, Math.PI);
+                ctx.fill();
+                ctx.stroke();
+
+                // Lidah imut
+                ctx.fillStyle = '#FF758F';
+                ctx.beginPath();
+                ctx.arc(128, 155, 11, Math.PI, 0);
+                ctx.fill();
+
+            } else {
+                // ==========================================
+                // 4. EKSPRESI NORMAL (IMUT & GEMOY)
+                // ==========================================
+                // Mata bulat hitam berkilau
+                ctx.beginPath();
+                ctx.arc(80, 104, 13, 0, Math.PI * 2);
+                ctx.arc(176, 104, 13, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Kilau putih (Sparkle kawaii)
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(84, 99, 4.5, 0, Math.PI * 2);
+                ctx.arc(180, 99, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Mulut senyum manis :)
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(128, 132, 13, 0.2 * Math.PI, 0.8 * Math.PI);
+                ctx.stroke();
+            }
+        }
+
+        function spawnCharacter(playerData) {
+            if (characters[playerData.id]) return;
+
+            const group = new THREE.Group();
+
+            // Badan Jeli (Bisa Bulat atau Kotak Tumpul)
+            const bodyGeo = playerData.shape === 'box'
+                ? new THREE.BoxGeometry(1.4, 1.4, 1.4)
+                : new THREE.SphereGeometry(0.9, 32, 32);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: playerData.color,
+                roughness: 0.25,
+                metalness: 0.1
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.9;
+            body.castShadow = true;
+            group.add(body);
+
+            // Kanvas Ekspresi Wajah Dinamis
+            const faceCanvas = document.createElement('canvas');
+            faceCanvas.width = 256; faceCanvas.height = 256;
+            const faceCtx = faceCanvas.getContext('2d');
+            drawFaceTexture(faceCtx, 'normal');
+
+            const faceTexture = new THREE.CanvasTexture(faceCanvas);
+            const faceMat = new THREE.MeshBasicMaterial({
+                map: faceTexture,
+                transparent: true,
+                depthWrite: false
+            });
+            const faceGeo = new THREE.PlaneGeometry(1.35, 1.35);
+            const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+            faceMesh.position.set(0, 0.95, playerData.shape === 'box' ? 0.72 : 0.88);
+            group.add(faceMesh);
+
+            // Tambahkan Label Nama di Atas Kepala
+            const nameTag = createNameSprite(playerData.name);
+            group.add(nameTag);
+
+            // Posisi Awal Jatuh dari Langit
+            group.position.set(playerData.x, 8, playerData.z);
+            scene.add(group);
+
+            characters[playerData.id] = {
+                id: playerData.id,
+                name: playerData.name || 'Si Gemoy',
+                group,
+                body,
+                faceCtx,
+                faceTexture,
+                expression: 'normal',
+                setExpression: function(newExp) {
+                    if (this.expression === newExp) return;
+                    this.expression = newExp;
+                    drawFaceTexture(this.faceCtx, newExp);
+                    this.faceTexture.needsUpdate = true;
+                },
+                lastHitBy: null,
+                lastHitTime: 0,
+                victoryTimer: 0,
+                vx: 0,
+                vz: 0,
+                vy: -0.15,
+                radius: 0.95,
+                spinSpeed: 0,
+                isFalling: false,
+                isBot: !!playerData.isBot
+            };
+        }
+
+        // =========================================================================
+        // 4. EFEK SUARA & PARTIKEL BENTURAN (WEB AUDIO API + THREE.JS PARTICLES)
+        // =========================================================================
+        const audioCtx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'bounce') {
+                    // Boing kartun lucu
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(170, now);
+                    osc.frequency.exponentialRampToValueAtTime(480, now + 0.12);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+                    osc.start(now);
+                    osc.stop(now + 0.14);
+                } else if (type === 'fall') {
+                    // Meluncur ke jurang
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(360, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.45);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                } else if (type === 'respawn') {
+                    // Ting ting respawn
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.setValueAtTime(780, now + 0.08);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                } else if (type === 'victory') {
+                    // Fanfare kemenangan ceria saat menjatuhkan lawan!
+                    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.type = 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                        noteGain.gain.setValueAtTime(0.24, now + idx * 0.07);
+                        noteGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.07 + 0.22);
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.start(now + idx * 0.07);
+                        noteOsc.stop(now + idx * 0.07 + 0.22);
+                    });
+                } else if (type === 'dizzy_fall') {
+                    // Suara kartun jatuh pusing (whistle getar panik turun)
+                    const osc2 = audioCtx.createOscillator();
+                    const vibrato = audioCtx.createOscillator();
+                    const vibGain = audioCtx.createGain();
+                    vibrato.frequency.value = 22;
+                    vibGain.gain.value = 45;
+                    vibrato.connect(osc2.frequency);
+
+                    osc2.type = 'sawtooth';
+                    osc2.frequency.setValueAtTime(480, now);
+                    osc2.frequency.exponentialRampToValueAtTime(70, now + 0.65);
+
+                    gain.gain.setValueAtTime(0.22, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
+
+                    osc2.connect(gain);
+                    vibrato.start(now);
+                    osc2.start(now);
+                    vibrato.stop(now + 0.65);
+                    osc2.stop(now + 0.65);
+                } else if (type === 'laugh') {
+                    // SFX Kartun Tertawa Terbahak-bahak ("Ha-ha-ha-ha-ha-ha!")
+                    const chucklePitches = [
+                        { start: 540, end: 370 },
+                        { start: 620, end: 410 },
+                        { start: 670, end: 450 },
+                        { start: 600, end: 390 },
+                        { start: 530, end: 350 },
+                        { start: 460, end: 280 }
+                    ];
+                    chucklePitches.forEach((pitch, i) => {
+                        const burstTime = now + i * 0.11;
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+
+                        // Nada vokal kartun tertawa "Ha!"
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(pitch.start, burstTime);
+                        osc.frequency.exponentialRampToValueAtTime(pitch.end, burstTime + 0.08);
+
+                        // Amplifikasi tawa beruntun
+                        gain.gain.setValueAtTime(0.01, burstTime);
+                        gain.gain.linearRampToValueAtTime(0.28, burstTime + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.01, burstTime + 0.09);
+
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+
+                        osc.start(burstTime);
+                        osc.stop(burstTime + 0.095);
+                    });
+                }
+            } catch (e) { }
+        }
+
+        // Sistem Partikel Bintang Benturan
+        const particles = [];
+        const particleGeo = new THREE.SphereGeometry(0.12, 8, 8);
+        const starColors = [0xFFE66D, 0xFF6B9D, 0x4ECDC4, 0xFFFFFF];
+
+        function createImpactEffect(x, y, z) {
+            playSound('bounce');
+            for (let i = 0; i < 7; i++) {
+                const mat = new THREE.MeshBasicMaterial({
+                    color: starColors[Math.floor(Math.random() * starColors.length)]
+                });
+                const mesh = new THREE.Mesh(particleGeo, mat);
+                mesh.position.set(x, y, z);
+                scene.add(mesh);
+
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.08 + Math.random() * 0.14;
+                particles.push({
+                    mesh,
+                    vx: Math.cos(angle) * speed,
+                    vy: 0.08 + Math.random() * 0.1,
+                    vz: Math.sin(angle) * speed,
+                    life: 1.0
+                });
+            }
+        }
+
+        // Tampilkan Notifikasi Respawn / Jatuh
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('game-toast');
+            if (!toast) return;
+            toast.innerText = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2200);
+        }
+
+        // Efek Konfeti Bintang Kemenangan Saat Menjatuhkan Lawan
+        function createVictoryConfetti(x, y, z) {
+            for (let i = 0; i < 18; i++) {
+                const mat = new THREE.MeshBasicMaterial({
+                    color: starColors[Math.floor(Math.random() * starColors.length)]
+                });
+                const mesh = new THREE.Mesh(particleGeo, mat);
+                mesh.position.set(x, y, z);
+                scene.add(mesh);
+
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.12 + Math.random() * 0.16;
+                particles.push({
+                    mesh,
+                    vx: Math.cos(angle) * speed,
+                    vy: 0.16 + Math.random() * 0.18,
+                    vz: Math.sin(angle) * speed,
+                    life: 1.2
+                });
+            }
+        }
+
+        // Fungsi Respawn Karakter Saat Jatuh dari Pulau
+        function respawnCharacter(char) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = 1 + Math.random() * 4;
+            const rx = Math.cos(angle) * r;
+            const rz = Math.sin(angle) * r;
+
+            char.group.position.set(rx, 10, rz);
+            char.vx = 0;
+            char.vz = 0;
+            char.vy = -0.16; // Turun dari langit
+            char.isFalling = false;
+            char.group.rotation.set(0, 0, 0);
+            char.body.scale.set(0.65, 1.5, 0.65);
+            char.setExpression('normal'); // Mata X hilang, kembali normal imut!
+
+            playSound('respawn');
+            createImpactEffect(rx, 1.5, rz);
+            showToast(`✨ ${char.name} Meluncur Kembali ke Pulau!`);
+        }
+
+        // =========================================================================
+        // 5. SINKRONISASI SOCKET.IO (DARI HP KE LAYAR 3D)
+        // =========================================================================
+        socket.on('server-info', (info) => {
+            const controllerUrl = info.controllerUrl || `http://${info.ip}:${info.port}/controller.html`;
+            const joinUrlEl = document.getElementById('join-url');
+            if (joinUrlEl) joinUrlEl.innerText = controllerUrl;
+
+            // Tampilkan QR Code lokal offline (data URL base64) atau fallback online
+            const qrImgEl = document.getElementById('qr-img');
+            if (qrImgEl) {
+                if (info.qrDataUrl) {
+                    qrImgEl.src = info.qrDataUrl;
+                } else {
+                    qrImgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(controllerUrl)}`;
+                }
+            }
+
+            if (info.players) {
+                Object.values(info.players).forEach(spawnCharacter);
+                const countEl = document.getElementById('player-count');
+                if (countEl) countEl.innerText = Object.keys(info.players).length;
+            }
+        });
+
+        socket.on('player-joined', (player) => spawnCharacter(player));
+
+        socket.on('player-left', (id) => {
+            if (characters[id]) {
+                scene.remove(characters[id].group);
+                delete characters[id];
+            }
+        });
+
+        socket.on('update-count', (count) => {
+            document.getElementById('player-count').innerText = count;
+        });
+
+        socket.on('trigger-action', (data) => {
+            const char = characters[data.id];
+            if (!char) return;
+
+            if (data.type === 'jump') {
+                if (!char.isFalling && char.group.position.y <= 0.3) {
+                    char.vy = 0.36; // Lontarkan ke atas
+                    char.body.scale.set(0.72, 1.45, 0.72); // Stretch
+                    playSound('bounce');
+                }
+            } else if (data.type === 'dance') {
+                char.spinSpeed = 0.48; // Berputar kencang jadi tornado tabrakan
+                if (char.group.position.y <= 0.3) char.vy = 0.22;
+                playSound('bounce');
+            } else if (data.type === 'color') {
+                char.body.material.color.set(data.color);
+                char.body.scale.set(1.4, 0.65, 1.4);
+            } else if (data.type === 'move') {
+                if (!char.isFalling) {
+                    const pushSpeed = 0.48;
+                    char.vx += data.dx * pushSpeed;
+                    char.vz += data.dz * pushSpeed;
+                    if (char.group.position.y <= 0.1) {
+                        char.vy = 0.16; // lompatan ceria saat berjalan
+                    }
+                    // Hadapkan arah badan sesuai arah gerak
+                    char.group.rotation.y = Math.atan2(data.dx, data.dz);
+                }
+            }
+        });
+
+        // Tombol Tambah Bot Lucu (Supaya layar langsung ramai dan saling dorong)
+        const botNames = ['BobaGemoy', 'Cimol3D', 'MochiPink', 'PuddingLucu', 'DonatGula', 'JeliNgebut', 'ChikiBall'];
+        const botColors = ['#FF6B9D', '#FFE66D', '#4ECDC4', '#A855F7', '#FF9F1C', '#2EC4B6'];
+        document.getElementById('btn-spawn-bot').addEventListener('click', () => {
+            const id = 'bot-' + Date.now();
+            spawnCharacter({
+                id,
+                name: botNames[Math.floor(Math.random() * botNames.length)],
+                color: botColors[Math.floor(Math.random() * botColors.length)],
+                shape: Math.random() > 0.5 ? 'sphere' : 'box',
+                x: (Math.random() - 0.5) * 8,
+                z: (Math.random() - 0.5) * 8,
+                isBot: true
+            });
+            document.getElementById('player-count').innerText = Object.keys(characters).length;
+        });
+
+        // 1. Tombol Reset Semua Bot
+        document.getElementById('btn-reset-bots').addEventListener('click', () => {
+            let removedCount = 0;
+            Object.keys(characters).forEach(id => {
+                if (characters[id].isBot || id.startsWith('bot-')) {
+                    scene.remove(characters[id].group);
+                    delete characters[id];
+                    removedCount++;
+                }
+            });
+            document.getElementById('player-count').innerText = Object.keys(characters).length;
+            if (removedCount > 0) {
+                showToast(`🧹 ${removedCount} Bot berhasil direset!`);
+                playSound('bounce');
+            } else {
+                showToast('ℹ️ Tidak ada bot di pulau');
+            }
+        });
+
+        // 2. Tombol Hapus Semua Karakter (Reset Total)
+        document.getElementById('btn-reset-all').addEventListener('click', () => {
+            const total = Object.keys(characters).length;
+            Object.keys(characters).forEach(id => {
+                scene.remove(characters[id].group);
+                delete characters[id];
+            });
+            document.getElementById('player-count').innerText = 0;
+            socket.emit('reset-all-players');
+            showToast(`💥 Pulau bersih! (${total} karakter direset)`);
+            playSound('bounce');
+        });
+
+        socket.on('all-players-cleared', () => {
+            Object.keys(characters).forEach(id => {
+                scene.remove(characters[id].group);
+                delete characters[id];
+            });
+            document.getElementById('player-count').innerText = 0;
+        });
+
+        // AI Bot Autonomous (Saling kejar, tabrak, dan loncat-loncat)
+        setInterval(() => {
+            const botList = Object.values(characters).filter(c => c.isBot && !c.isFalling);
+            botList.forEach(bot => {
+                const dist = Math.sqrt(bot.group.position.x ** 2 + bot.group.position.z ** 2);
+                let moveAngle;
+
+                if (dist > 6.2) {
+                    // Jika dekat tepi, arahkan kembali ke tengah pulau
+                    moveAngle = Math.atan2(-bot.group.position.z, -bot.group.position.x);
+                } else {
+                    // Beri dorongan acak menyeruduk
+                    moveAngle = Math.random() * Math.PI * 2;
+                }
+
+                const force = 0.38 + Math.random() * 0.28;
+                bot.vx += Math.cos(moveAngle) * force;
+                bot.vz += Math.sin(moveAngle) * force;
+                bot.group.rotation.y = moveAngle;
+
+                if (bot.group.position.y <= 0.1) {
+                    bot.vy = 0.18 + Math.random() * 0.14;
+                }
+                if (Math.random() < 0.22) {
+                    bot.spinSpeed = 0.45; // Serangan tornado spin!
+                }
+            });
+        }, 1100);
+
+        // Kontrol Keyboard (WASD / Panah / Spasi) untuk testing langsung di PC
+        window.addEventListener('keydown', (e) => {
+            const list = Object.values(characters);
+            if (list.length === 0) return;
+            const myChar = list.find(c => !c.isBot) || list[0];
+            if (!myChar || myChar.isFalling) return;
+
+            const pwr = 0.52;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                myChar.vz -= pwr;
+                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                myChar.group.rotation.y = Math.PI;
+            } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                myChar.vz += pwr;
+                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                myChar.group.rotation.y = 0;
+            } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                myChar.vx -= pwr;
+                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                myChar.group.rotation.y = -Math.PI / 2;
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                myChar.vx += pwr;
+                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                myChar.group.rotation.y = Math.PI / 2;
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                if (myChar.group.position.y <= 0.25) {
+                    myChar.vy = 0.38;
+                    myChar.body.scale.set(0.7, 1.45, 0.7);
+                    playSound('bounce');
+                }
+            }
+        });
+
+        // =========================================================================
+        // 6. EFEK GYRO / PARALLAX INTERAKTIF SAAT MOUSE DI-HOVER
+        // =========================================================================
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetTiltX = 0;
+        let targetTiltZ = 0;
+        let currentTiltX = 0;
+        let currentTiltZ = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            // Normalisasi posisi kursor -1 s/d 1 dari tengah layar
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+
+            // Target kemiringan gyro pulau (derajat halus dan stabil)
+            targetTiltX = mouseY * 0.10;   // Kemiringan depan / belakang
+            targetTiltZ = -mouseX * 0.10;  // Kemiringan kiri / kanan
+        });
+
+        // Sensor gyroscope fisik untuk tablet/smartphone
+        window.addEventListener('deviceorientation', (e) => {
+            if (e.beta !== null && e.gamma !== null) {
+                targetTiltX = (e.beta - 45) * 0.003;
+                targetTiltZ = -e.gamma * 0.003;
+            }
+        });
+
+        // =========================================================================
+        // 7. ANIMASI FISIKA JELI, TABRAKAN, JATUH & RENDER LOOP
+        // =========================================================================
+        const clock = new THREE.Clock();
+        const ISLAND_RADIUS = 9.8;
+
+        // Pohon sebagai rintangan tabrakan
+        const trees = [
+            { x: -6.5, z: -4, r: 0.8 },
+            { x: 6.8, z: -3.5, r: 0.8 },
+            { x: -5, z: 5.5, r: 0.8 },
+            { x: 5.5, z: 5, r: 0.8 }
+        ];
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // Transisi kemiringan gyro secara mulus (Lerp Easing)
+            currentTiltX += (targetTiltX - currentTiltX) * 0.05;
+            currentTiltZ += (targetTiltZ - currentTiltZ) * 0.05;
+
+            // Terapkan kemiringan gyro & sedikit pergeseran pada pulau
+            islandGroup.rotation.x = currentTiltX;
+            islandGroup.rotation.z = currentTiltZ;
+            islandGroup.position.x = mouseX * 0.45;
+            islandGroup.position.z = mouseY * 0.45;
+            islandGroup.position.y = Math.sin(t * 1.5) * 0.25;
+
+            // Parallax dinamis pada kamera 3D
+            camera.position.x = mouseX * 2.2;
+            camera.position.y = 14 - mouseY * 1.6;
+            camera.lookAt(0, 1, 0);
+
+            // -----------------------------------------------------------------
+            // DYNAMIC LIVING SHADOW: Posisi Sumber Cahaya Mengikuti Gyro Mouse
+            // Bayangan pohon & karakter memanjang, memendek, dan bergeser sudutnya
+            // -----------------------------------------------------------------
+            const targetLightX = 16 + mouseX * 8.5;
+            const targetLightY = 26 - mouseY * 6.0;
+            const targetLightZ = 12 + mouseY * 7.5;
+            dirLight.position.x += (targetLightX - dirLight.position.x) * 0.055;
+            dirLight.position.y += (targetLightY - dirLight.position.y) * 0.055;
+            dirLight.position.z += (targetLightZ - dirLight.position.z) * 0.055;
+            dirLight.target.position.set(islandGroup.position.x * 0.5, islandGroup.position.y, islandGroup.position.z * 0.5);
+
+            const charList = Object.values(characters);
+
+            // -----------------------------------------------------------------
+            // A. COLLISION DETECTION & RESOLUTION ANTAR POP (SALING TABRAK & DORONG)
+            // -----------------------------------------------------------------
+            for (let i = 0; i < charList.length; i++) {
+                for (let j = i + 1; j < charList.length; j++) {
+                    const c1 = charList[i];
+                    const c2 = charList[j];
+
+                    // Abaikan jika salah satunya sudah terjatuh ke jurang
+                    if (c1.isFalling || c2.isFalling) continue;
+
+                    const dx = c2.group.position.x - c1.group.position.x;
+                    const dz = c2.group.position.z - c1.group.position.z;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    const minDist = c1.radius + c2.radius; // ~1.9
+
+                    if (dist < minDist && dist > 0.001) {
+                        const overlap = minDist - dist;
+                        const nx = dx / dist;
+                        const nz = dz / dist;
+
+                        // Pisahkan kedua karakter agar tidak saling menembus
+                        c1.group.position.x -= nx * (overlap * 0.52);
+                        c1.group.position.z -= nz * (overlap * 0.52);
+                        c2.group.position.x += nx * (overlap * 0.52);
+                        c2.group.position.z += nz * (overlap * 0.52);
+
+                        // Kekuatan lemparan tabrakan (Knockback)
+                        // Karakter yang sedang berputar (dance) memberi knockback dahsyat!
+                        const spinBoost = (c1.spinSpeed > 0.08 || c2.spinSpeed > 0.08) ? 0.42 : 0.18;
+                        const baseForce = 0.32 + spinBoost;
+
+                        // Berikan dorongan kecepatan saling tolak (Bouncing knockback)
+                        c1.vx -= nx * baseForce;
+                        c1.vz -= nz * baseForce;
+                        c2.vx += nx * baseForce;
+                        c2.vz += nz * baseForce;
+
+                        // Lompat mantul ke atas sedikit
+                        if (c1.group.position.y <= 0.15) c1.vy = 0.18;
+                        if (c2.group.position.y <= 0.15) c2.vy = 0.18;
+
+                        // Efek jeli membal gepeng (Squash)
+                        c1.body.scale.set(1.4, 0.6, 1.4);
+                        c2.body.scale.set(1.4, 0.6, 1.4);
+
+                        // Efek partikel bintang & suara benturan
+                        const midX = (c1.group.position.x + c2.group.position.x) / 2;
+                        const midY = (c1.group.position.y + c2.group.position.y) / 2 + 0.9;
+                        const midZ = (c1.group.position.z + c2.group.position.z) / 2;
+                        createImpactEffect(midX, midY, midZ);
+
+                        // Catat riwayat tabrakan untuk mendeteksi siapa yang menjatuhkan lawan
+                        c1.lastHitBy = c2.id;
+                        c1.lastHitTime = Date.now();
+                        c2.lastHitBy = c1.id;
+                        c2.lastHitTime = Date.now();
+                    }
+                }
+            }
+
+            // -----------------------------------------------------------------
+            // B. COLLISION DENGAN POHON
+            // -----------------------------------------------------------------
+            trees.forEach(tr => {
+                charList.forEach(c => {
+                    if (c.isFalling) return;
+                    const tdx = c.group.position.x - tr.x;
+                    const tdz = c.group.position.z - tr.z;
+                    const tdist = Math.sqrt(tdx * tdx + tdz * tdz);
+                    const minT = c.radius + tr.r;
+                    if (tdist < minT && tdist > 0.001) {
+                        const toverlap = minT - tdist;
+                        const tnx = tdx / tdist;
+                        const tnz = tdz / tdist;
+                        c.group.position.x += tnx * toverlap;
+                        c.group.position.z += tnz * toverlap;
+                        c.vx += tnx * 0.28;
+                        c.vz += tnz * 0.28;
+                        c.body.scale.set(1.3, 0.7, 1.3);
+                        createImpactEffect(c.group.position.x, 0.9, c.group.position.z);
+                    }
+                });
+            });
+
+            // -----------------------------------------------------------------
+            // C. PERGERAKAN, JURANG PULAU, SELEBRASI & RESPAWN
+            // -----------------------------------------------------------------
+            charList.forEach((char) => {
+                // Terapkan kecepatan horizontal
+                char.group.position.x += char.vx;
+                char.group.position.z += char.vz;
+
+                // Gesekan tanah lembut (Damping)
+                char.vx *= 0.86;
+                char.vz *= 0.86;
+
+                // Jarak karakter dari pusat pulau
+                const distFromCenter = Math.sqrt(
+                    char.group.position.x * char.group.position.x +
+                    char.group.position.z * char.group.position.z
+                );
+
+                if (distFromCenter > ISLAND_RADIUS) {
+                    // Karakter keluar dari batas pulau -> JATUH BEBAS!
+                    if (!char.isFalling) {
+                        char.isFalling = true;
+                        char.setExpression('knocked_out'); // MATANYA JADI X LUCU!
+                        playSound('dizzy_fall'); // SFX pusing jatuh kartun!
+                        char.body.scale.set(0.65, 1.5, 0.65);
+
+                        // Cek siapa yang menjatuhkan lawan
+                        let killer = null;
+                        if (char.lastHitBy && characters[char.lastHitBy] && (Date.now() - char.lastHitTime < 5000)) {
+                            killer = characters[char.lastHitBy];
+                        }
+
+                        if (killer && killer.id !== char.id) {
+                            // PEMENANG (MENJATUHKAN LAWAN):
+                            // Randomize antara 2 ekspresi kemenangan:
+                            // 1. Melompat-lompat ceria sambil tersenyum + SFX Fanfare Kemenangan
+                            // 2. Tertawa terbahak-bahak hingga kelihatan gigi + SFX Tertawa Terbahak-bahak
+                            killer.victoryTimer = 160; // durasi selebrasi
+                            killer.vy = 0.38; // lompatan gembira pertama
+                            killer.spinSpeed = 0; // Hilangkan gerakan memutar saat berekspresi
+                            killer.group.rotation.set(0, 0, 0); // Menghadap lurus ke depan (kamera)
+                            createVictoryConfetti(killer.group.position.x, killer.group.position.y + 1.2, killer.group.position.z);
+
+                            const isLaugh = Math.random() > 0.5;
+                            if (isLaugh) {
+                                killer.setExpression('victory_laugh');
+                                playSound('laugh'); // SFX Tertawa Terbahak-bahak!
+                                showToast(`😆 ${killer.name} Tertawa Terbahak-bahak Menjatuhkan ${char.name}!`);
+                            } else {
+                                killer.setExpression('victory_smile');
+                                playSound('victory'); // SFX Fanfare Kemenangan!
+                                showToast(`🏆 ${killer.name} Melompat Gembira Menjatuhkan ${char.name}!`);
+                            }
+                        } else {
+                            showToast(`😱 ${char.name} Jatuh dari Pulau!`);
+                        }
+                    }
+
+                    // Gravitasi bebas terus menarik ke bawah
+                    char.vy -= 0.024;
+                    char.group.position.y += char.vy;
+
+                    // Hilangkan gerakan memutar saat jatuh agar ekspresi mata X tetap jelas menghadap depan
+                    char.group.rotation.set(0, 0, 0);
+                    char.spinSpeed = 0;
+
+                    // Jika sudah jatuh jauh ke jurang bawah langit (y < -18) -> RESPAWN!
+                    if (char.group.position.y < -18) {
+                        respawnCharacter(char);
+                    }
+                } else {
+                    // Karakter berada di atas daratan pulau
+                    char.isFalling = false;
+                    char.group.position.y += char.vy;
+
+                    // Hitung ketinggian permukaan rumput dengan kemiringan gyro & floating pulau
+                    const surfaceY = islandGroup.position.y
+                        - (char.group.position.z - islandGroup.position.z) * Math.sin(islandGroup.rotation.x)
+                        + (char.group.position.x - islandGroup.position.x) * Math.sin(islandGroup.rotation.z);
+
+                    if (char.group.position.y > surfaceY) {
+                        char.vy -= 0.016; // Gravitasi normal di atas pulau
+                    } else {
+                        // Mendarat di permukaan rumput
+                        if (char.vy < -0.1) {
+                            char.body.scale.set(1.35, 0.65, 1.35); // Gepeng mantul saat mendarat
+                            playSound('bounce');
+                        }
+                        char.group.position.y = surfaceY;
+                        char.vy = 0;
+                        if (char.victoryTimer <= 0) {
+                            char.group.rotation.x = 0;
+                            char.group.rotation.z = 0;
+                        }
+                    }
+
+                    // Sedikit dorongan meluncur sesuai kemiringan gyro pulau
+                    char.vx -= Math.sin(islandGroup.rotation.z) * 0.04;
+                    char.vz -= Math.sin(islandGroup.rotation.x) * 0.04;
+
+                    // Selebrasi Kemenangan (Melompat-lompat gembira TANPA gerakan memutar)
+                    if (char.victoryTimer > 0) {
+                        char.victoryTimer--;
+                        char.spinSpeed = 0; // Hilangkan putaran saat selebrasi
+                        char.group.rotation.set(0, 0, 0); // Selalu menghadap ke depan/kamera agar senyum terlihat jelas
+
+                        // Melompat ceria berulang kali
+                        if (char.group.position.y <= surfaceY + 0.05 && char.victoryTimer > 25) {
+                            char.vy = 0.28;
+                            char.body.scale.set(0.72, 1.4, 0.72);
+                        }
+                        if (char.victoryTimer === 0) {
+                            char.setExpression('normal'); // Kembali ke wajah normal
+                        }
+                    }
+                }
+
+                // Kembalikan kelenturan jeli secara mulus ke bentuk normal
+                char.body.scale.lerp(new THREE.Vector3(1, 1, 1), 0.14);
+
+                // Efek putaran tombol dance (Hanya berputar jika TIDAK sedang berekspresi selebrasi atau jatuh)
+                if (char.spinSpeed > 0.005 && char.victoryTimer <= 0 && !char.isFalling && char.expression === 'normal') {
+                    char.group.rotation.y += char.spinSpeed;
+                    char.spinSpeed *= 0.94;
+                } else if (!char.isFalling && char.victoryTimer <= 0) {
+                    // Goyangan ceria idle
+                    char.group.rotation.z = Math.sin(t * 4 + char.group.position.x) * 0.04;
+                }
+            });
+
+            // -----------------------------------------------------------------
+            // D. UPDATE PARTIKEL BINTANG BENTURAN
+            // -----------------------------------------------------------------
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.mesh.position.x += p.vx;
+                p.mesh.position.y += p.vy;
+                p.mesh.position.z += p.vz;
+                p.vy -= 0.006;
+                p.life -= 0.035;
+                p.mesh.scale.setScalar(Math.max(0.01, p.life));
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+
+</html>
