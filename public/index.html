@@ -196,7 +196,7 @@
             font-weight: 700;
             font-size: 1.05rem;
             color: #FF5E7E;
-            box-shadow: 0 6px 0 #2D3142, 0 10px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 0 #2D3142, 0 10px 20px rgba(0, 0, 0, 0.15);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -206,6 +206,148 @@
         .game-toast.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+        }
+
+        /* Container Tombol & Popup Credit di Ujung Kiri Bawah */
+        .credit-container {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            z-index: 50;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .btn-credit {
+            width: auto;
+            margin-top: 0;
+            padding: 10px 22px;
+            background: #FFE66D;
+            color: #2D3142;
+            border: 3px solid #2D3142;
+            border-radius: 99px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #2D3142, 0 8px 15px rgba(0, 0, 0, 0.12);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+
+        .btn-credit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #2D3142, 0 10px 20px rgba(0, 0, 0, 0.16);
+            background: #FFF085;
+        }
+
+        .btn-credit:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #2D3142;
+        }
+
+        .credit-popup {
+            display: none;
+            max-width: 380px;
+            padding: 18px 22px;
+            border-radius: 24px;
+            box-shadow: 0 8px 0 #2D3142, 0 16px 28px rgba(0, 0, 0, 0.2);
+            animation: creditPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .credit-popup.show {
+            display: block;
+        }
+
+        @keyframes creditPop {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.92);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .credit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .credit-badge {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #FF5E7E;
+            letter-spacing: 0.5px;
+            background: rgba(255, 94, 126, 0.12);
+            padding: 3px 10px;
+            border-radius: 99px;
+            border: 2px solid #FF5E7E;
+        }
+
+        .credit-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #2D3142;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+            transition: transform 0.1s;
+        }
+
+        .credit-close-btn:hover {
+            transform: scale(1.2);
+            color: #FF5E7E;
+        }
+
+        .credit-main {
+            font-size: 0.92rem;
+            color: #5C6479;
+            font-weight: 600;
+            line-height: 1.45;
+            margin-bottom: 10px;
+        }
+
+        .credit-authors {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .author-tag {
+            background: #4ECDC4;
+            color: #2D3142;
+            border: 2px solid #2D3142;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.92rem;
+            box-shadow: 0 2px 0 #2D3142;
+        }
+
+        .author-amp {
+            font-weight: 800;
+            color: #FF5E7E;
+            font-size: 1.1rem;
+        }
+
+        .credit-footer {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #0250B3;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -220,7 +362,7 @@
             <div class="brand-container">
                 <img src="logo-teramedia.png" alt="Logo Teramedia Politeknik Dewantara" class="brand-logo">
                 <div>
-                    <h1>🎈 POPIVERSE 3D</h1>
+                    <h1>POPIVERSE 3D</h1>
                     <p>Karya Mahasiswa Prodi Teknologi Rekayasa Multimedia</p>
                     <p class="brand-sub">Politeknik Dewantara</p>
                 </div>
@@ -238,8 +380,32 @@
                 <button class="demo-btn btn-spawn" id="btn-spawn-bot">🤖 + Tambah Bot</button>
                 <button class="demo-btn btn-reset-bots" id="btn-reset-bots">🧹 Reset Bot</button>
             </div>
-            <button class="demo-btn btn-reset-all" id="btn-reset-all">💥 Hapus Semua Karakter</button>
+            <button class="demo-btn btn-reset-all" id="btn-reset-all">💥 Reset Semua Karakter</button>
         </div>
+    </div>
+
+    <!-- Button & Popup Credit di Ujung Kiri Bawah -->
+    <div class="credit-container">
+        <div class="toy-card credit-popup" id="credit-popup">
+            <div class="credit-header">
+                <span class="credit-badge">🎓 KREDIT TIM</span>
+                <button class="credit-close-btn" id="credit-close-btn" title="Tutup">&times;</button>
+            </div>
+            <div class="credit-content">
+                <p class="credit-main">
+                    Karya Mahasiswa Program Studi Teknologi Rekayasa Multimedia:
+                </p>
+                <div class="credit-authors">
+                    <span class="author-tag">👤 Apdal</span>
+                    <span class="author-amp">&amp;</span>
+                    <span class="author-tag">👤 Alif Fikri</span>
+                </div>
+                <p class="credit-footer">Politeknik Dewantara Palopo</p>
+            </div>
+        </div>
+        <button class="demo-btn btn-credit" id="btn-credit">
+            <span>🎓</span> Credit
+        </button>
     </div>
 
     <script>
@@ -538,10 +704,10 @@
                         const imgData = offCtx.getImageData(0, 0, 256, 256);
                         const d = imgData.data;
                         for (let i = 0; i < d.length; i += 4) {
-                            const r = d[i], g = d[i+1], b = d[i+2];
+                            const r = d[i], g = d[i + 1], b = d[i + 2];
                             // Deteksi latar hijau terang (Chroma Key)
                             if (g > 140 && g > r * 1.3 && g > b * 1.3) {
-                                d[i+3] = 0; // Transparan
+                                d[i + 3] = 0; // Transparan
                             }
                         }
                         offCtx.putImageData(imgData, 0, 0);
@@ -604,7 +770,47 @@
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            if (expression === 'knocked_out') {
+            if (expression === 'panic_teeter' || expression === 'edge_slip') {
+                // ==========================================
+                // EKSPRESI TERBELALAK KAGET SAAT HAMPIR JATUH DI BIBIR TEBING 😱
+                // ==========================================
+                // Mata bulat besar terbelalak kaget
+                ctx.fillStyle = '#FFFFFF';
+                ctx.strokeStyle = '#2D3142';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(80, 102, 19, 0, Math.PI * 2);
+                ctx.arc(176, 102, 19, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Pupil hitam kecil bergetar panik di tengah
+                ctx.fillStyle = '#2D3142';
+                ctx.beginPath();
+                ctx.arc(80, 102, 7.5, 0, Math.PI * 2);
+                ctx.arc(176, 102, 7.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Kilau mata kecil
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(83, 99, 3, 0, Math.PI * 2);
+                ctx.arc(179, 99, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Mulut 'O' oval ternganga panik (gasp / yell!)
+                ctx.fillStyle = '#2D3142';
+                ctx.beginPath();
+                ctx.ellipse(128, 148, 16, 23, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Tetesan keringat biru besar di pelipis
+                ctx.fillStyle = '#38BDF8';
+                ctx.beginPath();
+                ctx.ellipse(212, 78, 8, 13, Math.PI * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else if (expression === 'knocked_out') {
                 // ==========================================
                 // 1. MATA X LUCU SAAT JATUH DARI PULAU
                 // ==========================================
@@ -818,9 +1024,11 @@
                 cryBubble,
                 cryScale: 0,
                 showCryBubble: false,
+                bubbleOffsetX: 0,
+                bubbleOffsetY: 4.2,
                 fallFreezeTimer: 0,
                 expression: 'normal',
-                setExpression: function(newExp) {
+                setExpression: function (newExp) {
                     if (this.expression === newExp) return;
                     this.expression = newExp;
                     drawFaceTexture(this.faceCtx, newExp);
@@ -834,6 +1042,13 @@
                 vy: -0.15,
                 radius: 0.95,
                 spinSpeed: 0,
+                recoilTiltX: 0,
+                recoilTiltZ: 0,
+                jellyJiggle: 0,
+                hitTimer: 0,
+                isTeetering: false,
+                teeterTimer: 0,
+                edgeAngle: 0,
                 isFalling: false,
                 isBot: !!playerData.isBot
             };
@@ -860,11 +1075,11 @@
                     soundClone.volume = 0.95;
                     soundClone.play().catch(() => {
                         hahaAudio.currentTime = 0;
-                        hahaAudio.play().catch(() => {});
+                        hahaAudio.play().catch(() => { });
                     });
                 } catch (e) {
                     hahaAudio.currentTime = 0;
-                    hahaAudio.play().catch(() => {});
+                    hahaAudio.play().catch(() => { });
                 }
                 return;
             } else if (type === 'cry') {
@@ -874,11 +1089,11 @@
                     soundClone.volume = 0.95;
                     soundClone.play().catch(() => {
                         cryAudio.currentTime = 0;
-                        cryAudio.play().catch(() => {});
+                        cryAudio.play().catch(() => { });
                     });
                 } catch (e) {
                     cryAudio.currentTime = 0;
-                    cryAudio.play().catch(() => {});
+                    cryAudio.play().catch(() => { });
                 }
                 return;
             }
@@ -957,6 +1172,16 @@
                     osc2.start(now);
                     vibrato.stop(now + 0.65);
                     osc2.stop(now + 0.65);
+                } else if (type === 'slip') {
+                    // Suara kartun tergelincir / kaget di ujung bibir pulau (whoop whistle)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(340, now);
+                    osc.frequency.linearRampToValueAtTime(680, now + 0.1);
+                    osc.frequency.linearRampToValueAtTime(420, now + 0.22);
+                    gain.gain.setValueAtTime(0.24, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
                 }
             } catch (e) { }
         }
@@ -984,6 +1209,44 @@
                     vy: 0.08 + Math.random() * 0.1,
                     vz: Math.sin(angle) * speed,
                     life: 1.0
+                });
+            }
+        }
+
+        // Efek Cipratan Keringat Panik Kartun Saat Tergelincir ke Jurang 💦
+        const sweatGeo = new THREE.SphereGeometry(0.13, 8, 8);
+        const sweatMat = new THREE.MeshBasicMaterial({ color: 0x38BDF8 });
+        function createPanicSweatEffect(x, y, z) {
+            for (let i = 0; i < 6; i++) {
+                const mesh = new THREE.Mesh(sweatGeo, sweatMat);
+                mesh.position.set(x + (Math.random() - 0.5) * 0.4, y + 1.2, z + (Math.random() - 0.5) * 0.4);
+                scene.add(mesh);
+                const side = i % 2 === 0 ? 1 : -1;
+                const speed = 0.08 + Math.random() * 0.1;
+                particles.push({
+                    mesh,
+                    vx: side * speed,
+                    vy: 0.16 + Math.random() * 0.08,
+                    vz: (Math.random() - 0.5) * 0.06,
+                    life: 0.85
+                });
+            }
+        }
+
+        // Efek Debu Gesekan di Tanah saat Karakter Terdorong Meluncur
+        const skidGeo = new THREE.SphereGeometry(0.12, 6, 6);
+        const skidMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+        function createSkidPuff(x, y, z) {
+            for (let i = 0; i < 4; i++) {
+                const mesh = new THREE.Mesh(skidGeo, skidMat);
+                mesh.position.set(x + (Math.random() - 0.5) * 0.4, y, z + (Math.random() - 0.5) * 0.4);
+                scene.add(mesh);
+                particles.push({
+                    mesh,
+                    vx: (Math.random() - 0.5) * 0.06,
+                    vy: 0.04 + Math.random() * 0.04,
+                    vz: (Math.random() - 0.5) * 0.06,
+                    life: 0.5
                 });
             }
         }
@@ -1035,13 +1298,22 @@
             char.vz = 0;
             char.vy = -0.16; // Turun dari langit
             char.isFalling = false;
+            char.isTeetering = false;
+            char.teeterTimer = 0;
+            char.edgeAngle = 0;
             char.showLaughBubble = false;
             char.bubbleScale = 0;
             if (char.laughBubble) char.laughBubble.sprite.visible = false;
             char.showCryBubble = false;
             char.cryScale = 0;
             if (char.cryBubble) char.cryBubble.sprite.visible = false;
+            char.bubbleOffsetX = 0;
+            char.bubbleOffsetY = 4.2;
             char.fallFreezeTimer = 0;
+            char.recoilTiltX = 0;
+            char.recoilTiltZ = 0;
+            char.jellyJiggle = 0;
+            char.hitTimer = 0;
             char.group.rotation.set(0, 0, 0);
             char.body.scale.set(0.65, 1.5, 0.65);
             char.setExpression('normal'); // Mata X hilang, kembali normal imut!
@@ -1094,7 +1366,7 @@
             if (!char) return;
 
             if (data.type === 'jump') {
-                if (!char.isFalling && char.group.position.y <= 0.3) {
+                if (!char.isFalling && !char.isTeetering && char.group.position.y <= 0.3) {
                     char.vy = 0.36; // Lontarkan ke atas
                     char.body.scale.set(0.72, 1.45, 0.72); // Stretch
                     playSound('bounce');
@@ -1107,7 +1379,7 @@
                 char.body.material.color.set(data.color);
                 char.body.scale.set(1.4, 0.65, 1.4);
             } else if (data.type === 'move') {
-                if (!char.isFalling) {
+                if (!char.isFalling && !char.isTeetering) {
                     const pushSpeed = 0.48;
                     char.vx += data.dx * pushSpeed;
                     char.vz += data.dz * pushSpeed;
@@ -1169,6 +1441,35 @@
             playSound('bounce');
         });
 
+        // Tombol Credit di Ujung Kiri Bawah
+        const btnCredit = document.getElementById('btn-credit');
+        const creditPopup = document.getElementById('credit-popup');
+        const creditCloseBtn = document.getElementById('credit-close-btn');
+
+        if (btnCredit && creditPopup) {
+            btnCredit.addEventListener('click', (e) => {
+                e.stopPropagation();
+                creditPopup.classList.toggle('show');
+                if (creditPopup.classList.contains('show')) {
+                    playSound('bounce');
+                }
+            });
+
+            if (creditCloseBtn) {
+                creditCloseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    creditPopup.classList.remove('show');
+                });
+            }
+
+            // Klik di luar popup untuk menutup
+            document.addEventListener('click', (e) => {
+                if (!creditPopup.contains(e.target) && e.target !== btnCredit) {
+                    creditPopup.classList.remove('show');
+                }
+            });
+        }
+
         socket.on('all-players-cleared', () => {
             Object.keys(characters).forEach(id => {
                 scene.remove(characters[id].group);
@@ -1179,7 +1480,7 @@
 
         // AI Bot Autonomous (Saling kejar, tabrak, dan loncat-loncat)
         setInterval(() => {
-            const botList = Object.values(characters).filter(c => c.isBot && !c.isFalling);
+            const botList = Object.values(characters).filter(c => c.isBot && !c.isFalling && !c.isTeetering);
             botList.forEach(bot => {
                 const dist = Math.sqrt(bot.group.position.x ** 2 + bot.group.position.z ** 2);
                 let moveAngle;
@@ -1323,8 +1624,8 @@
                     const c1 = charList[i];
                     const c2 = charList[j];
 
-                    // Abaikan jika salah satunya sudah terjatuh ke jurang
-                    if (c1.isFalling || c2.isFalling) continue;
+                    // Abaikan jika salah satunya sudah terjatuh ke jurang atau sedang tergelincir di tepi tebing
+                    if (c1.isFalling || c2.isFalling || c1.isTeetering || c2.isTeetering) continue;
 
                     const dx = c2.group.position.x - c1.group.position.x;
                     const dz = c2.group.position.z - c1.group.position.z;
@@ -1344,8 +1645,8 @@
 
                         // Kekuatan lemparan tabrakan (Knockback)
                         // Karakter yang sedang berputar (dance) memberi knockback dahsyat!
-                        const spinBoost = (c1.spinSpeed > 0.08 || c2.spinSpeed > 0.08) ? 0.42 : 0.18;
-                        const baseForce = 0.32 + spinBoost;
+                        const spinBoost = (c1.spinSpeed > 0.08 || c2.spinSpeed > 0.08) ? 0.45 : 0.18;
+                        const baseForce = 0.35 + spinBoost;
 
                         // Berikan dorongan kecepatan saling tolak (Bouncing knockback)
                         c1.vx -= nx * baseForce;
@@ -1354,12 +1655,34 @@
                         c2.vz += nz * baseForce;
 
                         // Lompat mantul ke atas sedikit
-                        if (c1.group.position.y <= 0.15) c1.vy = 0.18;
-                        if (c2.group.position.y <= 0.15) c2.vy = 0.18;
+                        if (c1.group.position.y <= 0.15) c1.vy = 0.20;
+                        if (c2.group.position.y <= 0.15) c2.vy = 0.20;
 
-                        // Efek jeli membal gepeng (Squash)
-                        c1.body.scale.set(1.4, 0.6, 1.4);
-                        c2.body.scale.set(1.4, 0.6, 1.4);
+                        // 1. RECOIL STUMBLE TILT: Tubuh condong/miring ke belakang melawan arah dorongan
+                        c1.recoilTiltX = -nz * Math.min(0.65, baseForce * 1.3);
+                        c1.recoilTiltZ = nx * Math.min(0.65, baseForce * 1.3);
+                        c2.recoilTiltX = nz * Math.min(0.65, baseForce * 1.3);
+                        c2.recoilTiltZ = -nx * Math.min(0.65, baseForce * 1.3);
+
+                        // 2. JELLY JIGGLE: Efek gelombang kenyal membal (Bouncy jelly oscillation)
+                        c1.jellyJiggle = Math.min(1.0, baseForce * 1.8);
+                        c2.jellyJiggle = Math.min(1.0, baseForce * 1.8);
+
+                        // 3. SKID PUFFS: Partikel debu/rumput licin di bawah kaki saat terdorong meluncur
+                        createSkidPuff(c1.group.position.x, 0.25, c1.group.position.z);
+                        createSkidPuff(c2.group.position.x, 0.25, c2.group.position.z);
+
+                        // 4. EKSPRESI KAGET / STARTLED SESAAT: Mata X kaget saat terbentur keras
+                        if (baseForce > 0.36) {
+                            if (c1.victoryTimer <= 0 && !c1.isFalling) {
+                                c1.hitTimer = 18;
+                                c1.setExpression('knocked_out');
+                            }
+                            if (c2.victoryTimer <= 0 && !c2.isFalling) {
+                                c2.hitTimer = 18;
+                                c2.setExpression('knocked_out');
+                            }
+                        }
 
                         // Efek partikel bintang & suara benturan
                         const midX = (c1.group.position.x + c2.group.position.x) / 2;
@@ -1381,7 +1704,7 @@
             // -----------------------------------------------------------------
             trees.forEach(tr => {
                 charList.forEach(c => {
-                    if (c.isFalling) return;
+                    if (c.isFalling || c.isTeetering) return;
                     const tdx = c.group.position.x - tr.x;
                     const tdz = c.group.position.z - tr.z;
                     const tdist = Math.sqrt(tdx * tdx + tdz * tdz);
@@ -1392,9 +1715,12 @@
                         const tnz = tdz / tdist;
                         c.group.position.x += tnx * toverlap;
                         c.group.position.z += tnz * toverlap;
-                        c.vx += tnx * 0.28;
-                        c.vz += tnz * 0.28;
-                        c.body.scale.set(1.3, 0.7, 1.3);
+                        c.vx += tnx * 0.32;
+                        c.vz += tnz * 0.32;
+                        c.recoilTiltX = tnz * 0.45;
+                        c.recoilTiltZ = -tnx * 0.45;
+                        c.jellyJiggle = 0.8;
+                        createSkidPuff(c.group.position.x, 0.25, c.group.position.z);
                         createImpactEffect(c.group.position.x, 0.9, c.group.position.z);
                     }
                 });
@@ -1404,13 +1730,15 @@
             // C. PERGERAKAN, JURANG PULAU, SELEBRASI & RESPAWN
             // -----------------------------------------------------------------
             charList.forEach((char) => {
-                // Terapkan kecepatan horizontal
-                char.group.position.x += char.vx;
-                char.group.position.z += char.vz;
+                // Terapkan kecepatan horizontal jika tidak sedang teetering di bibir jurang
+                if (!char.isTeetering && !char.isFalling) {
+                    char.group.position.x += char.vx;
+                    char.group.position.z += char.vz;
 
-                // Gesekan tanah lembut (Damping)
-                char.vx *= 0.86;
-                char.vz *= 0.86;
+                    // Gesekan tanah lembut (Damping)
+                    char.vx *= 0.86;
+                    char.vz *= 0.86;
+                }
 
                 // Jarak karakter dari pusat pulau
                 const distFromCenter = Math.sqrt(
@@ -1418,16 +1746,93 @@
                     char.group.position.z * char.group.position.z
                 );
 
-                if (distFromCenter > ISLAND_RADIUS) {
-                    // Karakter keluar dari batas pulau -> JATUH DENGAN FREEZE & BUBBLE MENANGIS!
-                    if (!char.isFalling) {
+                // DETEKSI MOMEN SESAAT SEBELUM KELUAR PULAU (PRE-FALL EDGE SLIP & TEETER):
+                if (!char.isFalling && !char.isTeetering) {
+                    const movingOutward = (char.vx * char.group.position.x + char.vz * char.group.position.z) > 0;
+                    if (distFromCenter >= ISLAND_RADIUS - 0.28 && (movingOutward || distFromCenter >= ISLAND_RADIUS)) {
+                        char.isTeetering = true;
+                        char.teeterTimer = 26; // Durasi animasi tergelincir halus di bibir tebing (~0.43 detik)
+                        char.edgeAngle = Math.atan2(char.group.position.z, char.group.position.x);
+                        char.setExpression('panic_teeter'); // Ekspresi mata terbelalak kaget & mulut O!
+                        playSound('slip'); // Suara kartun tergelincir
+                        char.vx = 0;
+                        char.vz = 0;
+                        char.recoilTiltX = 0;
+                        char.recoilTiltZ = 0;
+                        char.jellyJiggle = 0;
+                    }
+                }
+
+                if (char.isTeetering) {
+                    // =================================================================
+                    // TAHAP 1: ANIMASI SESAAT SEBELUM KELUAR DARI ISLAND (EDGE TEETER / SLIP)
+                    // =================================================================
+                    char.teeterTimer--;
+
+                    const progress = 1 - (char.teeterTimer / 26); // 0 sampai 1 mulus
+                    const outAngle = char.edgeAngle !== undefined ? char.edgeAngle : Math.atan2(char.group.position.z, char.group.position.x);
+
+                    // 1. Kaki meluncur halus ke arah bibir tebing (Smooth slide outward, bukan getaran patah-patah)
+                    const edgeDist = (ISLAND_RADIUS - 0.15) + progress * 0.35;
+                    char.group.position.x = Math.cos(outAngle) * edgeDist;
+                    char.group.position.z = Math.sin(outAngle) * edgeDist;
+
+                    // Ketinggian permukaan tebing pulau
+                    const surfaceY = islandGroup.position.y
+                        - (char.group.position.z - islandGroup.position.z) * Math.sin(islandGroup.rotation.x)
+                        + (char.group.position.x - islandGroup.position.x) * Math.sin(islandGroup.rotation.z);
+                    char.group.position.y = surfaceY;
+                    char.vy = 0;
+
+                    // 2. Kemiringan badan condong ke jurang yang mulus & stabil (Tanpa getaran shaky)
+                    const nx = Math.cos(outAngle);
+                    const nz = Math.sin(outAngle);
+
+                    // Condong perlahan ke jurang (kurva ease-in yang halus)
+                    const forwardLean = 0.28 + Math.pow(progress, 1.35) * 0.52;
+                    // Goyangan penyeimbang yang sangat lembut dan tenang (1 kali siklus lambat, bukan tremor)
+                    const gentleSway = Math.sin(progress * Math.PI * 2) * 0.05;
+                    const totalTilt = forwardLean + gentleSway;
+
+                    char.group.rotation.x = nz * totalTilt;
+                    char.group.rotation.z = -nx * totalTilt;
+                    char.group.rotation.y = (char.group.rotation.y || 0) * 0.85; // Hadap ke arah kamera agar wajah kaget terlihat jelas
+
+                    // 3. Jeli melar halus (Smooth non-shaky squash & stretch)
+                    const stretchY = 1.0 + Math.sin(progress * Math.PI) * 0.14;
+                    const squashXZ = 1.0 - Math.sin(progress * Math.PI) * 0.07;
+                    char.body.scale.set(squashXZ, stretchY, squashXZ);
+
+                    // 4. Efek debu gesekan kaki di tepi tebing (3 kali semprotan bersih, tidak menumpuk)
+                    if (char.teeterTimer === 22 || char.teeterTimer === 13 || char.teeterTimer === 4) {
+                        createSkidPuff(char.group.position.x, surfaceY + 0.1, char.group.position.z);
+                    }
+                    if (char.teeterTimer === 24) {
+                        createPanicSweatEffect(char.group.position.x, surfaceY + 0.9, char.group.position.z);
+                    }
+
+                    // 5. KESEIMBANGAN HILANG TOTAL -> DILANJUTKAN DENGAN TERJATUH KE JURANG!
+                    if (char.teeterTimer <= 0) {
+                        char.isTeetering = false;
                         char.isFalling = true;
-                        char.fallFreezeTimer = 85; // Tahan di udara sekitar 1-2 detik (1.4 detik)
+                        char.fallFreezeTimer = 25; // jeda kartun singkat ~0.4 detik
                         char.setExpression('knocked_out'); // MATANYA JADI X LUCU!
+
+                        // Geser karakter keluar pulau melayang bebas di jurang
+                        const pushOutTarget = ISLAND_RADIUS + 2.5;
+                        char.group.position.x = Math.cos(outAngle) * pushOutTarget;
+                        char.group.position.z = Math.sin(outAngle) * pushOutTarget;
+
                         char.vx = 0;
                         char.vz = 0;
                         char.vy = 0; // Hentikan di udara
-                        char.body.scale.set(0.75, 1.35, 0.75);
+                        char.freezeStartY = surfaceY; // Catat titik awal melayang
+
+                        // Efek Cipratan Keringat Panik Kartun 💦
+                        createPanicSweatEffect(char.group.position.x, char.group.position.y, char.group.position.z);
+
+                        // Bentuk awal jeli: melar ke bawah seperti tetesan air menggantung (teardrop)
+                        char.body.scale.set(0.85, 1.25, 0.85);
 
                         // Munculkan bubble chat menangis (Clash Royale King Cry)
                         char.showCryBubble = true;
@@ -1446,60 +1851,107 @@
 
                         if (killer && killer.id !== char.id) {
                             // PEMENANG (MENJATUHKAN LAWAN):
-                            // Randomize antara 2 ekspresi kemenangan:
-                            // 1. Melompat-lompat ceria sambil tersenyum + SFX Fanfare Kemenangan
-                            // 2. Tertawa terbahak-bahak hingga kelihatan gigi + SFX Tertawa Terbahak-bahak
                             killer.victoryTimer = 160; // durasi selebrasi
                             killer.vy = 0.38; // lompatan gembira pertama
                             killer.spinSpeed = 0; // Hilangkan gerakan memutar saat berekspresi
                             killer.group.rotation.set(0, 0, 0); // Menghadap lurus ke depan (kamera)
                             createVictoryConfetti(killer.group.position.x, killer.group.position.y + 1.2, killer.group.position.z);
 
-                            const isLaugh = Math.random() > 0.5;
-                            if (isLaugh) {
-                                killer.setExpression('victory_laugh');
-                                killer.showLaughBubble = true;
-                                killer.bubbleScale = 0.2;
-                                killer.laughBubble.sprite.visible = true;
-                                killer.laughBubble.refresh();
-                                playSound('laugh'); // SFX Tertawa sfx-haha.mp3!
-                                showToast(`😆 ${killer.name} Tertawa Terbahak-bahak Menjatuhkan ${char.name}!`);
-                            } else {
-                                killer.setExpression('victory_smile');
-                                killer.showLaughBubble = false;
-                                playSound('victory'); // SFX Fanfare Kemenangan!
-                                showToast(`🏆 ${killer.name} Melompat Gembira Menjatuhkan ${char.name}!`);
+                            // PISAHKAN POSISI BUBBLE CHAT AGAR TIDAK SALING BERTUMPUKAN (ANTI-OVERLAP):
+                            // Hitung arah horizontal relatif antara korban (char) dan pemenang (killer)
+                            const dx = char.group.position.x - killer.group.position.x;
+                            const dir = (dx >= 0) ? 1 : -1;
+
+                            // Korban (yang dijatuhkan): bubble digeser ke arah luar dan posisi Y lebih rendah
+                            char.bubbleOffsetX = dir * 1.2;
+                            char.bubbleOffsetY = 3.5;
+                            if (char.cryBubble && char.cryBubble.sprite) {
+                                char.cryBubble.sprite.renderOrder = 9;
                             }
+
+                            // Pemenang (yang menjatuhkan): bubble digeser ke arah berlawanan dan posisi Y lebih tinggi
+                            killer.bubbleOffsetX = -dir * 1.2;
+                            killer.bubbleOffsetY = 4.95;
+                            if (killer.laughBubble && killer.laughBubble.sprite) {
+                                killer.laughBubble.sprite.renderOrder = 10;
+                            }
+
+                            // Tampilkan emote tertawa menang & emote menangis secara berdampingan tanpa menumpuk
+                            killer.setExpression('victory_laugh');
+                            killer.showLaughBubble = true;
+                            killer.bubbleScale = 0.2;
+                            killer.laughBubble.sprite.visible = true;
+                            killer.laughBubble.refresh();
+                            playSound('laugh'); // SFX Tertawa sfx-haha.mp3!
+                            showToast(`😆 ${killer.name} Tertawa Menjatuhkan ${char.name}!`);
                         } else {
+                            char.bubbleOffsetX = 0;
+                            char.bubbleOffsetY = 4.2;
                             showToast(`😭 ${char.name} Menangis Tergelincir dari Pulau!`);
                         }
                     }
 
-                    // TAHAN DI UDARA SEKITAR 1-2 DETIK LALU JATUHKAN SECARA KONSTAN
+                } else if (char.isFalling) {
+                    // =================================================================
+                    // TAHAP 2: TERJATUH KE JURANG
+                    // =================================================================
+                    // FASE 1: TAHAN DI UDARA (EFEK KARTUN LUCU WILE E. COYOTE / DANGLING PENDULUM)
                     if (char.fallFreezeTimer > 0) {
                         char.fallFreezeTimer--;
-                        char.vy = 0; // Tahan melayang diam di udara
-                        // Bergetar panik di tempat (Comic freeze & panic tremble)
-                        char.group.rotation.z = Math.sin(t * 35) * 0.07;
-                        char.body.scale.set(0.85 + Math.sin(t * 25) * 0.05, 1.25 - Math.sin(t * 25) * 0.05, 0.85);
+                        char.vy = 0;
 
-                        // Animasi Pop-in & Goyangan Bubble Chat Menangis
-                        char.cryScale += (2.4 - char.cryScale) * 0.16;
-                        const cryWobble = 1 + Math.sin(t * 14) * 0.08;
-                        char.cryBubble.sprite.scale.set(char.cryScale * cryWobble, char.cryScale * (2 - cryWobble), 1);
-                        char.cryBubble.sprite.position.y = 4.3 + Math.sin(t * 8) * 0.12;
+                        // Efek Lucu 1: Goyangan pendulum kartun yang tenang & halus (tidak shaky)
+                        char.group.rotation.z = Math.sin(t * 3.5) * 0.12;
+
+                        // Efek Lucu 2: Melayang naik-turun lembut tanpa bobot
+                        if (char.freezeStartY !== undefined) {
+                            char.group.position.y = char.freezeStartY + Math.sin(t * 4.0) * 0.08;
+                        }
+
+                        // Efek Lucu 3: Jeli melar ke bawah lembut (squash & stretch teardrop)
+                        char.body.scale.set(
+                            0.88 - Math.sin(t * 3.5) * 0.04,
+                            1.22 + Math.sin(t * 3.5) * 0.06,
+                            0.88 - Math.sin(t * 3.5) * 0.04
+                        );
+
+                        // Bubble Chat Menangis ikut melayang stabil
+                        char.cryScale += (2.1 - char.cryScale) * 0.28;
+                        char.cryBubble.sprite.scale.set(char.cryScale, char.cryScale, 1);
+                        const cryBaseX = char.bubbleOffsetX !== undefined ? char.bubbleOffsetX : 0;
+                        const cryBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 3.5;
+                        char.cryBubble.sprite.position.set(cryBaseX, cryBaseY, 0);
+
+                        // Saat detik-detik terakhir freeze (momen "Gulp!" sesaat sebelum jatuh)
+                        if (char.fallFreezeTimer === 1) {
+                            playSound('dizzy_fall'); // Suara kartun turun!
+                            char.body.scale.set(0.65, 1.55, 0.65); // Melar panjang sesaat sebelum terjun!
+                            char.vy = -0.22;
+                        }
 
                     } else {
-                        // Setelah freeze 1-2 detik selesai -> JATUHKAN PLAYER SECARA KONSTAN
-                        char.vy = -0.28; // Kecepatan jatuh konstan
+                        // FASE 2: MELUNCUR JATUH KE JURANG BAWAH (JELLY FLAPPING & PARACHUTE LEAF SWAY)
+                        // Gravitasi bertambah secara akselerasi kartun yang lebih realistis
+                        char.vy = Math.max(char.vy - 0.022, -0.62);
                         char.group.position.y += char.vy;
-                        char.group.rotation.set(0, 0, 0); // Tetap menghadap depan tanpa memutar
-                        char.spinSpeed = 0;
+
+                        // Efek Lucu 4: Goyangan daun gugur saat meluncur yang tenang & mulus
+                        char.group.rotation.z = Math.sin(t * 4.2) * 0.14;
+
+                        // Efek Lucu 5: Jeli kenyal bergelombang lembut tertiup angin
+                        const windWobble = Math.sin(t * 6) * 0.08;
+                        char.body.scale.set(
+                            1.0 + windWobble,
+                            1.25 - windWobble * 0.8,
+                            1.0 + windWobble
+                        );
 
                         // Bubble chat menangis tetap ikut jatuh bersama karakter
                         if (char.showCryBubble) {
                             char.cryBubble.sprite.scale.set(char.cryScale, char.cryScale, 1);
-                            char.cryBubble.sprite.position.y = 4.3;
+                            const cryBaseX = char.bubbleOffsetX !== undefined ? char.bubbleOffsetX : 0;
+                            const cryBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 3.5;
+                            char.cryBubble.sprite.position.set(cryBaseX, cryBaseY, 0);
                         }
 
                         // Jika sudah jatuh jauh ke jurang bawah langit (y < -18) -> RESPAWN!
@@ -1551,16 +2003,24 @@
                         if (char.victoryTimer === 0) {
                             char.setExpression('normal'); // Kembali ke wajah normal
                             char.showLaughBubble = false;
+                            char.bubbleOffsetX = 0;
+                            char.bubbleOffsetY = 4.2;
                         }
                     }
 
-                    // Animasi Pop-in & Goyangan Gemoy Bubble Chat Tertawa
+                    // Animasi Pop-in & Goyangan Gemoy Bubble Chat Tertawa (Posisi Terpisah Anti-Menumpuk)
                     if (char.showLaughBubble && char.victoryTimer > 0) {
                         char.laughBubble.sprite.visible = true;
-                        char.bubbleScale += (2.4 - char.bubbleScale) * 0.16;
+                        char.bubbleScale += (2.1 - char.bubbleScale) * 0.16;
                         const wobble = 1 + Math.sin(t * 14) * 0.08;
                         char.laughBubble.sprite.scale.set(char.bubbleScale * wobble, char.bubbleScale * (2 - wobble), 1);
-                        char.laughBubble.sprite.position.y = 4.3 + Math.sin(t * 8) * 0.15;
+                        const laughBaseX = char.bubbleOffsetX !== undefined ? char.bubbleOffsetX : 0;
+                        const laughBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 4.95;
+                        char.laughBubble.sprite.position.set(
+                            laughBaseX,
+                            laughBaseY + Math.sin(t * 8) * 0.15,
+                            0
+                        );
                     } else if (char.laughBubble && char.laughBubble.sprite.visible) {
                         char.bubbleScale *= 0.8;
                         char.laughBubble.sprite.scale.set(char.bubbleScale, char.bubbleScale, 1);
@@ -1580,16 +2040,39 @@
                     }
                 }
 
-                // Kembalikan kelenturan jeli secara mulus ke bentuk normal
-                char.body.scale.lerp(new THREE.Vector3(1, 1, 1), 0.14);
+                // Redam kemiringan terdorong kembali tegak mulus (Spring damping)
+                char.recoilTiltX = (char.recoilTiltX || 0) * 0.86;
+                char.recoilTiltZ = (char.recoilTiltZ || 0) * 0.86;
+
+                // Update Timer Ekspresi Kaget saat Terdorong
+                if (char.hitTimer && char.hitTimer > 0) {
+                    char.hitTimer--;
+                    if (char.hitTimer === 0 && !char.isFalling && !char.isTeetering && char.victoryTimer <= 0) {
+                        char.setExpression('normal');
+                    }
+                }
+
+                // Animasi Osilasi Kelenturan Jeli saat Terdorong (Bouncy Jelly Jiggle)
+                if (char.jellyJiggle && char.jellyJiggle > 0.02) {
+                    char.jellyJiggle *= 0.88;
+                    const jiggle = Math.sin(t * 30) * char.jellyJiggle * 0.32;
+                    char.body.scale.set(
+                        1.0 + jiggle,
+                        1.0 - jiggle * 1.25,
+                        1.0 + jiggle
+                    );
+                } else if (!char.isFalling && !char.isTeetering) {
+                    char.body.scale.lerp(new THREE.Vector3(1, 1, 1), 0.14);
+                }
 
                 // Efek putaran tombol dance (Hanya berputar jika TIDAK sedang berekspresi selebrasi atau jatuh)
-                if (char.spinSpeed > 0.005 && char.victoryTimer <= 0 && !char.isFalling && char.expression === 'normal') {
+                if (char.spinSpeed > 0.005 && char.victoryTimer <= 0 && !char.isFalling && !char.isTeetering && char.expression === 'normal') {
                     char.group.rotation.y += char.spinSpeed;
                     char.spinSpeed *= 0.94;
-                } else if (!char.isFalling && char.victoryTimer <= 0) {
-                    // Goyangan ceria idle
-                    char.group.rotation.z = Math.sin(t * 4 + char.group.position.x) * 0.04;
+                } else if (!char.isFalling && !char.isTeetering && char.victoryTimer <= 0) {
+                    // Miringkan badan sesuai hentakan dorongan + sedikit goyangan ceria idle
+                    char.group.rotation.x = char.recoilTiltX || 0;
+                    char.group.rotation.z = (char.recoilTiltZ || 0) + Math.sin(t * 4 + char.group.position.x) * 0.04;
                 }
             });
 

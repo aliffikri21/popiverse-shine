@@ -72,7 +72,7 @@
             height: 46px;
             object-fit: contain;
             flex-shrink: 0;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
         }
 
         .creator-info {
@@ -95,10 +95,56 @@
             color: #1E293B;
         }
 
-        .creator-univ {
+        .creator-authors {
             font-size: 0.78rem;
-            font-weight: 700;
+            font-weight: 800;
             color: #0250B3;
+            margin-top: 2px;
+        }
+
+        .creator-univ {
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: #64748B;
+        }
+
+        /* Banner Credit Lengkap */
+        .credit-banner {
+            margin-top: 14px;
+            background: #FFFDF9;
+            border: 3px solid #2D3142;
+            border-radius: 18px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 0 #2D3142;
+            text-align: center;
+        }
+
+        .credit-banner-title {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #FF5E7E;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .credit-banner-text {
+            font-size: 0.8rem;
+            color: #2D3142;
+            line-height: 1.35;
+            margin-bottom: 3px;
+        }
+
+        .credit-banner-text strong {
+            color: #0250B3;
+            font-weight: 800;
+        }
+
+        .credit-banner-sub {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748B;
         }
 
         input[type="text"] {
@@ -187,6 +233,42 @@
             color: #2D3142;
         }
 
+        .btn-secondary {
+            background: #F1F5F9;
+            color: #475569;
+            font-size: 1rem;
+            padding: 13px;
+            margin-top: 4px;
+        }
+
+        /* Toast Notifikasi di HP */
+        .controller-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-70px);
+            background: #2D3142;
+            color: #FFFFFF;
+            padding: 12px 22px;
+            border-radius: 99px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border: 3px solid #FFE66D;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.35s ease;
+            z-index: 9999;
+            text-align: center;
+            max-width: 90vw;
+            line-height: 1.35;
+        }
+
+        .controller-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
         /* D-Pad Gerakan */
         .dpad {
             display: grid;
@@ -217,15 +299,18 @@
 </head>
 
 <body>
+    <!-- Toast Popup Notifikasi -->
+    <div id="controller-toast" class="controller-toast"></div>
 
     <!-- LAYAR 1: PEMBUATAN KARAKTER -->
     <div class="card" id="setup-screen">
-        <!-- Logo & Branding Kampus / Program Studi -->
+        <!-- Logo & Branding Kampus & Credit Mahasiswa -->
         <div class="creator-badge">
             <img src="logo-teramedia.png" alt="Logo Teramedia Politeknik Dewantara" class="creator-logo">
             <div class="creator-info">
-                <span class="creator-tag">✨ Karya Mahasiswa</span>
+                <span class="creator-tag">✨ Karya Mahasiswa TRM</span>
                 <strong class="creator-dept">Prodi Teknologi Rekayasa Multimedia</strong>
+                <span class="creator-authors">👨‍💻 Apdal &amp; Alif Fikri</span>
                 <span class="creator-univ">Politeknik Dewantara</span>
             </div>
         </div>
@@ -250,6 +335,14 @@
         </div>
 
         <button class="big-btn btn-pink" id="btn-join">🚀 LOMPAT KE PULAU!</button>
+
+        <!-- Banner Credit Mahasiswa di Bawah Form -->
+        <div class="credit-banner">
+            <span class="credit-banner-title">🎓 Tim Pengembang</span>
+            <p class="credit-banner-text">Karya Mahasiswa Program Studi Teknologi Rekayasa Multimedia: <strong>Apdal
+                    &amp; Alif Fikri</strong></p>
+            <span class="credit-banner-sub">Politeknik Dewantara</span>
+        </div>
     </div>
 
     <!-- LAYAR 2: GAMEPAD KONTROLER LIVE -->
@@ -269,14 +362,18 @@
         <button class="big-btn btn-mint" id="btn-jump">🦘 LOMPAT TINGGI!</button>
         <button class="big-btn btn-yellow" id="btn-dance">💃 GOYANG SPIN!</button>
         <button class="big-btn btn-pink" id="btn-random-color">🌈 GANTI WARNA ACAK</button>
+        <button class="big-btn btn-secondary" id="btn-return-setup">🔄 Ganti / Input Ulang Karakter</button>
 
-        <!-- Footer Identitas Karya -->
-        <div class="creator-badge" style="margin-top: 14px; margin-bottom: 0; padding: 8px 12px; justify-content: center;">
-            <img src="logo-teramedia.png" alt="Logo Teramedia Politeknik Dewantara" class="creator-logo" style="width: 32px; height: 32px;">
-            <div class="creator-info">
-                <span class="creator-tag" style="font-size: 0.65rem;">✨ Karya Mahasiswa TRM</span>
-                <span class="creator-univ" style="font-size: 0.74rem;">Politeknik Dewantara</span>
+        <!-- Banner Credit Mahasiswa di Bawah Gamepad -->
+        <div class="credit-banner" style="margin-top: 14px; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px;">
+                <img src="logo-teramedia.png" alt="Logo Teramedia"
+                    style="width: 24px; height: 24px; object-fit: contain;">
+                <span class="credit-banner-title" style="margin-bottom: 0;">🎓 Kredit Karya</span>
             </div>
+            <p class="credit-banner-text">Karya Mahasiswa Program Studi Teknologi Rekayasa Multimedia: <strong>Apdal
+                    &amp; Alif Fikri</strong></p>
+            <span class="credit-banner-sub">Politeknik Dewantara Palopo</span>
         </div>
     </div>
 
@@ -284,6 +381,59 @@
         const socket = io();
         let selectedColor = '#FF6B9D';
         let selectedShape = 'sphere';
+
+        // Fungsi menampilkan Toast notifikasi di HP
+        let toastTimeout;
+        function showToast(message, duration = 3500) {
+            const toast = document.getElementById('controller-toast');
+            if (!toast) return;
+            toast.innerText = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Fungsi mengembalikan halaman ke pembuatan karakter (Mode Pasif / Input Ulang)
+        function returnToSetup(reason = '') {
+            const gamepadScreen = document.getElementById('gamepad-screen');
+            const setupScreen = document.getElementById('setup-screen');
+
+            // Sembunyikan gamepad & tampilkan form buat karakter
+            gamepadScreen.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+
+            // Kosongkan nama & fokuskan kembali agar user bisa langsung input ulang
+            const nameInput = document.getElementById('player-name');
+            if (nameInput) {
+                nameInput.value = '';
+                nameInput.focus();
+            }
+
+            // Efek getar HP saat kembali
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+            }
+
+            if (reason) {
+                showToast(reason);
+            }
+        }
+
+        // 1. Saat tombol Reset ditekan di Layar Utama / Host (Reset Total Karakter)
+        socket.on('all-players-cleared', () => {
+            const isCurrentlyInGame = !document.getElementById('gamepad-screen').classList.contains('hidden');
+            if (isCurrentlyInGame) {
+                returnToSetup('💥 Pulau telah direset oleh admin! Silakan buat karakter baru.');
+            }
+        });
+
+        // 2. Tombol manual dari HP untuk kembali ganti / input ulang karakter
+        document.getElementById('btn-return-setup').addEventListener('click', () => {
+            socket.emit('leave-island');
+            returnToSetup('Kamu telah keluar dari pulau. Silakan buat karakter baru!');
+        });
 
         // Pilih Warna
         document.querySelectorAll('.color-dot').forEach(dot => {

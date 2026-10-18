@@ -100,6 +100,15 @@ io.on('connection', async (socket) => {
         io.emit('all-players-cleared');
         io.emit('update-count', 0);
     });
+
+    // 5. Saat pengunjung keluar / ganti karakter dari HP
+    socket.on('leave-island', () => {
+        if (players[socket.id]) {
+            delete players[socket.id];
+            io.emit('player-left', socket.id);
+            io.emit('update-count', Object.keys(players).length);
+        }
+    });
 });
 
 const PORT = 3000;
