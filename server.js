@@ -15,6 +15,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Fungsi otomatis mencari IP Address Wi-Fi Laptop untuk QR Code
 function getLocalIP() {
     const interfaces = os.networkInterfaces();
+    // Prioritaskan adapter fisik (hindari adapter virtual seperti WSL / Hyper-V / VirtualBox)
+    for (const name of Object.keys(interfaces)) {
+        if (/vEthernet|WSL|VMware|Virtual|Hyper-V/i.test(name)) continue;
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    // Fallback jika tidak ditemukan adapter fisik
     for (const name of Object.keys(interfaces)) {
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
