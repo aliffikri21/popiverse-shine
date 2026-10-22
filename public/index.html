@@ -349,10 +349,64 @@
             color: #0250B3;
             margin-top: 8px;
         }
+
+        .sound-toggle-btn {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            background: #FFE66D;
+            color: #2D3142;
+            border: 3px solid #2D3142;
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 800;
+            box-shadow: 0 5px 0 #2D3142;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            animation: pulse-sound 2s infinite ease-in-out;
+        }
+
+        .sound-toggle-btn:hover {
+            transform: translateX(-50%) scale(1.06);
+            background: #FFD93D;
+            box-shadow: 0 7px 0 #2D3142;
+        }
+
+        .sound-toggle-btn.active {
+            animation: none;
+            background: #4ECDC4;
+            color: #2D3142;
+            padding: 6px 16px;
+            font-size: 0.82rem;
+        }
+
+        @keyframes pulse-sound {
+
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.06);
+                box-shadow: 0 6px 0 #2D3142, 0 0 16px rgba(255, 230, 109, 0.7);
+            }
+        }
     </style>
 </head>
 
 <body>
+
+    <button id="btn-sound-toggle" class="sound-toggle-btn" title="Klik untuk mengaktifkan semua efek suara">
+        🔊 Aktifkan Suara Layar
+    </button>
 
     <canvas id="canvas3d"></canvas>
     <div id="game-toast" class="game-toast"></div>
@@ -363,7 +417,7 @@
                 <img src="logo-teramedia.png" alt="Logo Teramedia Politeknik Dewantara" class="brand-logo">
                 <div>
                     <h1>POPIVERSE 3D</h1>
-                    <p>Karya Mahasiswa Prodi Teknologi Rekayasa Multimedia</p>
+                    <p>Karya KADER TERAMEDIA</p>
                     <p class="brand-sub">Politeknik Dewantara</p>
                 </div>
             </div>
@@ -393,7 +447,7 @@
             </div>
             <div class="credit-content">
                 <p class="credit-main">
-                    Karya Mahasiswa Program Studi Teknologi Rekayasa Multimedia:
+                    Karya KADER TERAMEDIA:
                 </p>
                 <div class="credit-authors">
                     <span class="author-tag">👤 Apdal</span>
@@ -457,6 +511,14 @@
         // =========================================================================
         const islandGroup = new THREE.Group();
         scene.add(islandGroup);
+
+        // Fungsi akurat menghitung ketinggian permukaan pulau secara dinamis (mengikuti gyro & kemiringan)
+        function getIslandSurfaceY(x, z) {
+            if (!islandGroup) return 0;
+            return islandGroup.position.y
+                - (z - islandGroup.position.z) * Math.sin(islandGroup.rotation.x)
+                + (x - islandGroup.position.x) * Math.sin(islandGroup.rotation.z);
+        }
 
         // Rumput Hijau Mint
         const grassGeo = new THREE.CylinderGeometry(10, 9.2, 1.6, 48);
@@ -615,7 +677,7 @@
             });
             const sprite = new THREE.Sprite(spriteMat);
             sprite.scale.set(0.01, 0.01, 1);
-            sprite.position.set(0, 4.3, 0);
+            sprite.position.set(0, 4.0, 0);
             sprite.visible = false;
 
             return {
@@ -736,7 +798,7 @@
             });
             const sprite = new THREE.Sprite(spriteMat);
             sprite.scale.set(0.01, 0.01, 1);
-            sprite.position.set(0, 4.3, 0);
+            sprite.position.set(0, 4.0, 0);
             sprite.visible = false;
 
             return {
@@ -1025,7 +1087,7 @@
                 cryScale: 0,
                 showCryBubble: false,
                 bubbleOffsetX: 0,
-                bubbleOffsetY: 4.2,
+                bubbleOffsetY: 4.0,
                 fallFreezeTimer: 0,
                 expression: 'normal',
                 setExpression: function (newExp) {
@@ -1055,9 +1117,27 @@
         }
 
         // =========================================================================
-        // 4. EFEK SUARA & PARTIKEL BENTURAN (WEB AUDIO API + THREE.JS PARTICLES)
+        // 4. SISTEM EFEK SUARA SENADA (C-MAJOR TOY-CORE PENTATONIC AUDIO SYNTHESIZER)
         // =========================================================================
-        const audioCtx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+        const MUSICAL_PITCH = {
+            C4: 261.63, D4: 293.66, E4: 329.63, G4: 392.00, A4: 440.00,
+            C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880.00,
+            C6: 1046.50, D6: 1174.66, E6: 1318.51, G6: 1567.98
+        };
+
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtxClass) {
+                    audioCtx = new AudioCtxClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => { });
+            }
+            return audioCtx;
+        }
 
         // SFX Tertawa dari file eksternal sfx-haha.mp3
         const hahaAudio = new Audio('sfx-haha.mp3');
@@ -1067,121 +1147,305 @@
         const cryAudio = new Audio('sfx-cry.mp3');
         cryAudio.preload = 'auto';
 
-        function playSound(type) {
-            if (type === 'laugh') {
-                // Putar file sfx-haha.mp3 langsung
+        // Indikator & Pembuka Kunci Audio Otomatis (Mengatasi Autoplay Policy Browser)
+        let isAudioUnlocked = false;
+        function unlockAudio(playChime = false) {
+            const ctx = getAudioContext();
+            if (ctx && ctx.state === 'suspended') {
+                ctx.resume().catch(() => { });
+            }
+            if (ctx) {
                 try {
-                    const soundClone = hahaAudio.cloneNode();
-                    soundClone.volume = 0.95;
-                    soundClone.play().catch(() => {
-                        hahaAudio.currentTime = 0;
-                        hahaAudio.play().catch(() => { });
-                    });
-                } catch (e) {
+                    const buf = ctx.createBuffer(1, 1, 22050);
+                    const src = ctx.createBufferSource();
+                    src.buffer = buf;
+                    src.connect(ctx.destination);
+                    src.start(0);
+                } catch (e) { }
+            }
+            try {
+                hahaAudio.play().then(() => { hahaAudio.pause(); hahaAudio.currentTime = 0; }).catch(() => { });
+                cryAudio.play().then(() => { cryAudio.pause(); cryAudio.currentTime = 0; }).catch(() => { });
+            } catch (e) { }
+
+            isAudioUnlocked = true;
+            const soundBtn = document.getElementById('btn-sound-toggle');
+            if (soundBtn) {
+                soundBtn.classList.add('active');
+                soundBtn.innerHTML = '🔊 Suara Aktif';
+                setTimeout(() => {
+                    soundBtn.style.opacity = '0.35';
+                }, 4000);
+            }
+
+            if (playChime) {
+                playSound('respawn');
+            }
+        }
+
+        ['click', 'pointerdown', 'touchstart', 'keydown'].forEach(evt => {
+            window.addEventListener(evt, () => {
+                if (!isAudioUnlocked) unlockAudio(false);
+            }, { passive: true, once: true });
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const soundToggleBtn = document.getElementById('btn-sound-toggle');
+            if (soundToggleBtn) {
+                soundToggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    unlockAudio(true);
+                });
+                soundToggleBtn.addEventListener('mouseenter', () => {
+                    soundToggleBtn.style.opacity = '1';
+                });
+                soundToggleBtn.addEventListener('mouseleave', () => {
+                    if (isAudioUnlocked) soundToggleBtn.style.opacity = '0.35';
+                });
+            }
+        });
+
+        // -------------------------------------------------------------------------
+        // SFX SENADA: TANGGA NADA PENTATONIK C-MAYOR (C - D - E - G - A)
+        // -------------------------------------------------------------------------
+        function playSynthLaugh(ctx) {
+            if (!ctx) return;
+            try {
+                const now = ctx.currentTime;
+                // Melodi tertawa riang kartun: G5 -> E5 -> G5 -> C6 (Ha-ha-ha-haa!)
+                const laughNotes = [MUSICAL_PITCH.G5, MUSICAL_PITCH.E5, MUSICAL_PITCH.G5, MUSICAL_PITCH.C6];
+                laughNotes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.24, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.075);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.075);
+                });
+            } catch (e) { }
+        }
+
+        function playSynthCry(ctx) {
+            if (!ctx) return;
+            try {
+                const now = ctx.currentTime;
+                // Tangis kartun lucu meluncur: E5 -> D5 -> C5 dengan vibrato halus
+                const cryNotes = [MUSICAL_PITCH.E5, MUSICAL_PITCH.D5, MUSICAL_PITCH.C5];
+                cryNotes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const vib = ctx.createOscillator();
+                    const vibGain = ctx.createGain();
+                    const gain = ctx.createGain();
+
+                    vib.frequency.setValueAtTime(6.0, now + idx * 0.16);
+                    vibGain.gain.setValueAtTime(14, now + idx * 0.16);
+                    vib.connect(osc.frequency);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+                    osc.frequency.exponentialRampToValueAtTime(freq * 0.88, now + idx * 0.16 + 0.14);
+
+                    gain.gain.setValueAtTime(0.20, now + idx * 0.16);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.15);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    vib.start(now + idx * 0.16);
+                    osc.start(now + idx * 0.16);
+                    vib.stop(now + idx * 0.16 + 0.15);
+                    osc.stop(now + idx * 0.16 + 0.15);
+                });
+            } catch (e) { }
+        }
+
+        function playSound(type) {
+            const ctx = getAudioContext();
+
+            if (type === 'laugh') {
+                try {
                     hahaAudio.currentTime = 0;
-                    hahaAudio.play().catch(() => { });
+                    hahaAudio.volume = 0.95;
+                    const p = hahaAudio.play();
+                    if (p !== undefined) {
+                        p.catch(() => playSynthLaugh(ctx));
+                    }
+                } catch (e) {
+                    playSynthLaugh(ctx);
                 }
                 return;
             } else if (type === 'cry') {
-                // Putar file sfx-cry.mp3 langsung
                 try {
-                    const soundClone = cryAudio.cloneNode();
-                    soundClone.volume = 0.95;
-                    soundClone.play().catch(() => {
-                        cryAudio.currentTime = 0;
-                        cryAudio.play().catch(() => { });
-                    });
-                } catch (e) {
                     cryAudio.currentTime = 0;
-                    cryAudio.play().catch(() => { });
+                    cryAudio.volume = 0.95;
+                    const p = cryAudio.play();
+                    if (p !== undefined) {
+                        p.catch(() => playSynthCry(ctx));
+                    }
+                } catch (e) {
+                    playSynthCry(ctx);
                 }
                 return;
             }
 
-            if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            if (!ctx) return;
+            if (ctx.state === 'suspended') {
+                ctx.resume().catch(() => { });
             }
+
             try {
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                const now = ctx.currentTime;
 
                 if (type === 'bounce') {
-                    // Boing kartun lucu
+                    // 1. BOUNCE: Pantulan jeli empuk & ceria (G4 meluncur cepat ke C5)
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(170, now);
-                    osc.frequency.exponentialRampToValueAtTime(480, now + 0.12);
-                    gain.gain.setValueAtTime(0.25, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
-                    osc.start(now);
-                    osc.stop(now + 0.14);
-                } else if (type === 'fall') {
-                    // Meluncur ke jurang
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(360, now);
-                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.45);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-                    osc.start(now);
-                    osc.stop(now + 0.45);
-                } else if (type === 'respawn') {
-                    // Ting ting respawn
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(520, now);
-                    osc.frequency.setValueAtTime(780, now + 0.08);
-                    gain.gain.setValueAtTime(0.25, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
-                    osc.start(now);
-                    osc.stop(now + 0.28);
-                } else if (type === 'victory') {
-                    // Fanfare kemenangan ceria saat menjatuhkan lawan!
-                    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
-                    notes.forEach((freq, idx) => {
-                        const noteOsc = audioCtx.createOscillator();
-                        const noteGain = audioCtx.createGain();
-                        noteOsc.type = 'triangle';
-                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.07);
-                        noteGain.gain.setValueAtTime(0.24, now + idx * 0.07);
-                        noteGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.07 + 0.22);
-                        noteOsc.connect(noteGain);
-                        noteGain.connect(audioCtx.destination);
-                        noteOsc.start(now + idx * 0.07);
-                        noteOsc.stop(now + idx * 0.07 + 0.22);
-                    });
-                } else if (type === 'dizzy_fall') {
-                    // Suara kartun jatuh pusing (whistle getar panik turun)
-                    const osc2 = audioCtx.createOscillator();
-                    const vibrato = audioCtx.createOscillator();
-                    const vibGain = audioCtx.createGain();
-                    vibrato.frequency.value = 22;
-                    vibGain.gain.value = 45;
-                    vibrato.connect(osc2.frequency);
+                    osc.frequency.setValueAtTime(MUSICAL_PITCH.G4, now);
+                    osc.frequency.exponentialRampToValueAtTime(MUSICAL_PITCH.C5, now + 0.08);
 
-                    osc2.type = 'sawtooth';
-                    osc2.frequency.setValueAtTime(480, now);
-                    osc2.frequency.exponentialRampToValueAtTime(70, now + 0.65);
+                    gain.gain.setValueAtTime(0.26, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+
+                } else if (type === 'dance') {
+                    // 2. DANCE: Melodi trill putaran balerina gemoy (C5 -> E5 -> G5 -> C6)
+                    const danceNotes = [MUSICAL_PITCH.C5, MUSICAL_PITCH.E5, MUSICAL_PITCH.G5, MUSICAL_PITCH.C6];
+                    danceNotes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                        gain.gain.setValueAtTime(0.18, now + idx * 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.07);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.05);
+                        osc.stop(now + idx * 0.05 + 0.07);
+                    });
+
+                } else if (type === 'color') {
+                    // 3. COLOR: Gelembung pop pelangi berdentang (E5 meluncur ke A5 & overtone C6)
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc1.type = 'sine';
+                    osc2.type = 'triangle';
+                    osc1.frequency.setValueAtTime(MUSICAL_PITCH.E5, now);
+                    osc1.frequency.exponentialRampToValueAtTime(MUSICAL_PITCH.A5, now + 0.06);
+                    osc2.frequency.setValueAtTime(MUSICAL_PITCH.C6, now);
+
+                    gain.gain.setValueAtTime(0.20, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc1.start(now);
+                    osc2.start(now);
+                    osc1.stop(now + 0.14);
+                    osc2.stop(now + 0.14);
+
+                } else if (type === 'slip') {
+                    // 4. SLIP: Siulan meluncur panik kartun tapi tetap di nada (E5 -> G5 -> A5 -> G5)
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(MUSICAL_PITCH.E5, now);
+                    osc.frequency.linearRampToValueAtTime(MUSICAL_PITCH.A5, now + 0.09);
+                    osc.frequency.linearRampToValueAtTime(MUSICAL_PITCH.G5, now + 0.20);
 
                     gain.gain.setValueAtTime(0.22, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
-                    osc2.connect(gain);
-                    vibrato.start(now);
-                    osc2.start(now);
-                    vibrato.stop(now + 0.65);
-                    osc2.stop(now + 0.65);
-                } else if (type === 'slip') {
-                    // Suara kartun tergelincir / kaget di ujung bibir pulau (whoop whistle)
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(340, now);
-                    osc.frequency.linearRampToValueAtTime(680, now + 0.1);
-                    osc.frequency.linearRampToValueAtTime(420, now + 0.22);
-                    gain.gain.setValueAtTime(0.24, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
                     osc.start(now);
                     osc.stop(now + 0.22);
+
+                } else if (type === 'dizzy_fall' || type === 'fall') {
+                    // 5. DIZZY FALL: Meluncur turun pentatonik halus (G5 -> E5 -> D5 -> C5 -> G4)
+                    const fallNotes = [MUSICAL_PITCH.G5, MUSICAL_PITCH.E5, MUSICAL_PITCH.D5, MUSICAL_PITCH.C5, MUSICAL_PITCH.G4];
+                    fallNotes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.18 - idx * 0.025, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.10);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.10);
+                    });
+
+                } else if (type === 'respawn') {
+                    // 6. RESPAWN: Lonceng kristal arpeggio ceria (C5 -> E5 -> G5 -> C6)
+                    const chimeNotes = [MUSICAL_PITCH.C5, MUSICAL_PITCH.E5, MUSICAL_PITCH.G5, MUSICAL_PITCH.C6];
+                    chimeNotes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.065);
+                        gain.gain.setValueAtTime(0.22, now + idx * 0.065);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.065 + 0.26);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.065);
+                        osc.stop(now + idx * 0.065 + 0.26);
+                    });
+
+                } else if (type === 'victory') {
+                    // 7. VICTORY: Fanfare C-Major megah (G4 -> C5 -> E5 -> G5 -> akor C6+E6)
+                    const fanNotes = [MUSICAL_PITCH.G4, MUSICAL_PITCH.C5, MUSICAL_PITCH.E5, MUSICAL_PITCH.G5];
+                    fanNotes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                        gain.gain.setValueAtTime(0.24, now + idx * 0.07);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.18);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.07);
+                        osc.stop(now + idx * 0.07 + 0.18);
+                    });
+
+                    // Akor dentangan penutup kemenangan yang senada
+                    const chordTime = now + 0.28;
+                    [MUSICAL_PITCH.C6, MUSICAL_PITCH.E6, MUSICAL_PITCH.G5].forEach(freq => {
+                        const chordOsc = ctx.createOscillator();
+                        const chordGain = ctx.createGain();
+                        chordOsc.type = 'sine';
+                        chordOsc.frequency.setValueAtTime(freq, chordTime);
+                        chordGain.gain.setValueAtTime(0.16, chordTime);
+                        chordGain.gain.exponentialRampToValueAtTime(0.001, chordTime + 0.45);
+                        chordOsc.connect(chordGain);
+                        chordGain.connect(ctx.destination);
+                        chordOsc.start(chordTime);
+                        chordOsc.stop(chordTime + 0.45);
+                    });
+
+                } else if (type === 'tap') {
+                    // 8. TAP: Ketukan kayu lembut di G4
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(MUSICAL_PITCH.G4, now);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
                 }
             } catch (e) { }
         }
@@ -1308,7 +1572,7 @@
             char.cryScale = 0;
             if (char.cryBubble) char.cryBubble.sprite.visible = false;
             char.bubbleOffsetX = 0;
-            char.bubbleOffsetY = 4.2;
+            char.bubbleOffsetY = 4.0;
             char.fallFreezeTimer = 0;
             char.recoilTiltX = 0;
             char.recoilTiltZ = 0;
@@ -1348,7 +1612,10 @@
             }
         });
 
-        socket.on('player-joined', (player) => spawnCharacter(player));
+        socket.on('player-joined', (player) => {
+            spawnCharacter(player);
+            playSound('respawn'); // Suara ting-ting ceria menyambut pemain baru di pulau!
+        });
 
         socket.on('player-left', (id) => {
             if (characters[id]) {
@@ -1365,25 +1632,36 @@
             const char = characters[data.id];
             if (!char) return;
 
+            // Buka audio jika browser mengizinkan aktivasi otomatis
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => { });
+            }
+
+            const currentSurfaceY = getIslandSurfaceY(char.group.position.x, char.group.position.z);
+            const isGrounded = !char.isFalling && !char.isTeetering && (char.group.position.y <= currentSurfaceY + 0.35);
+
             if (data.type === 'jump') {
-                if (!char.isFalling && !char.isTeetering && char.group.position.y <= 0.3) {
-                    char.vy = 0.36; // Lontarkan ke atas
+                if (isGrounded) {
+                    char.vy = 0.38; // Lontarkan ke atas
                     char.body.scale.set(0.72, 1.45, 0.72); // Stretch
                     playSound('bounce');
                 }
             } else if (data.type === 'dance') {
                 char.spinSpeed = 0.48; // Berputar kencang jadi tornado tabrakan
-                if (char.group.position.y <= 0.3) char.vy = 0.22;
-                playSound('bounce');
+                if (isGrounded) {
+                    char.vy = 0.22;
+                }
+                playSound('dance');
             } else if (data.type === 'color') {
                 char.body.material.color.set(data.color);
                 char.body.scale.set(1.4, 0.65, 1.4);
+                playSound('color'); // Suara pop kenyal saat ganti warna
             } else if (data.type === 'move') {
                 if (!char.isFalling && !char.isTeetering) {
                     const pushSpeed = 0.48;
                     char.vx += data.dx * pushSpeed;
                     char.vz += data.dz * pushSpeed;
-                    if (char.group.position.y <= 0.1) {
+                    if (char.group.position.y <= currentSurfaceY + 0.15) {
                         char.vy = 0.16; // lompatan ceria saat berjalan
                     }
                     // Hadapkan arah badan sesuai arah gerak
@@ -1451,7 +1729,7 @@
                 e.stopPropagation();
                 creditPopup.classList.toggle('show');
                 if (creditPopup.classList.contains('show')) {
-                    playSound('bounce');
+                    playSound('color');
                 }
             });
 
@@ -1498,7 +1776,8 @@
                 bot.vz += Math.sin(moveAngle) * force;
                 bot.group.rotation.y = moveAngle;
 
-                if (bot.group.position.y <= 0.1) {
+                const botSurf = getIslandSurfaceY(bot.group.position.x, bot.group.position.z);
+                if (bot.group.position.y <= botSurf + 0.2) {
                     bot.vy = 0.18 + Math.random() * 0.14;
                 }
                 if (Math.random() < 0.22) {
@@ -1514,25 +1793,26 @@
             const myChar = list.find(c => !c.isBot) || list[0];
             if (!myChar || myChar.isFalling) return;
 
+            const mySurf = getIslandSurfaceY(myChar.group.position.x, myChar.group.position.z);
             const pwr = 0.52;
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
                 myChar.vz -= pwr;
-                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                if (myChar.group.position.y <= mySurf + 0.18) myChar.vy = 0.16;
                 myChar.group.rotation.y = Math.PI;
             } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
                 myChar.vz += pwr;
-                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                if (myChar.group.position.y <= mySurf + 0.18) myChar.vy = 0.16;
                 myChar.group.rotation.y = 0;
             } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
                 myChar.vx -= pwr;
-                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                if (myChar.group.position.y <= mySurf + 0.18) myChar.vy = 0.16;
                 myChar.group.rotation.y = -Math.PI / 2;
             } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
                 myChar.vx += pwr;
-                if (myChar.group.position.y <= 0.1) myChar.vy = 0.16;
+                if (myChar.group.position.y <= mySurf + 0.18) myChar.vy = 0.16;
                 myChar.group.rotation.y = Math.PI / 2;
             } else if (e.key === ' ' || e.key === 'Spacebar') {
-                if (myChar.group.position.y <= 0.25) {
+                if (myChar.group.position.y <= mySurf + 0.35) {
                     myChar.vy = 0.38;
                     myChar.body.scale.set(0.7, 1.45, 0.7);
                     playSound('bounce');
@@ -1655,8 +1935,10 @@
                         c2.vz += nz * baseForce;
 
                         // Lompat mantul ke atas sedikit
-                        if (c1.group.position.y <= 0.15) c1.vy = 0.20;
-                        if (c2.group.position.y <= 0.15) c2.vy = 0.20;
+                        const c1Surf = getIslandSurfaceY(c1.group.position.x, c1.group.position.z);
+                        const c2Surf = getIslandSurfaceY(c2.group.position.x, c2.group.position.z);
+                        if (c1.group.position.y <= c1Surf + 0.25) c1.vy = 0.20;
+                        if (c2.group.position.y <= c2Surf + 0.25) c2.vy = 0.20;
 
                         // 1. RECOIL STUMBLE TILT: Tubuh condong/miring ke belakang melawan arah dorongan
                         c1.recoilTiltX = -nz * Math.min(0.65, baseForce * 1.3);
@@ -1778,9 +2060,7 @@
                     char.group.position.z = Math.sin(outAngle) * edgeDist;
 
                     // Ketinggian permukaan tebing pulau
-                    const surfaceY = islandGroup.position.y
-                        - (char.group.position.z - islandGroup.position.z) * Math.sin(islandGroup.rotation.x)
-                        + (char.group.position.x - islandGroup.position.x) * Math.sin(islandGroup.rotation.z);
+                    const surfaceY = getIslandSurfaceY(char.group.position.x, char.group.position.z);
                     char.group.position.y = surfaceY;
                     char.vy = 0;
 
@@ -1857,36 +2137,32 @@
                             killer.group.rotation.set(0, 0, 0); // Menghadap lurus ke depan (kamera)
                             createVictoryConfetti(killer.group.position.x, killer.group.position.y + 1.2, killer.group.position.z);
 
-                            // PISAHKAN POSISI BUBBLE CHAT AGAR TIDAK SALING BERTUMPUKAN (ANTI-OVERLAP):
-                            // Hitung arah horizontal relatif antara korban (char) dan pemenang (killer)
-                            const dx = char.group.position.x - killer.group.position.x;
-                            const dir = (dx >= 0) ? 1 : -1;
-
-                            // Korban (yang dijatuhkan): bubble digeser ke arah luar dan posisi Y lebih rendah
-                            char.bubbleOffsetX = dir * 1.2;
-                            char.bubbleOffsetY = 3.5;
+                            // Posisikan bubble chat tepat di tengah pas di karakter
+                            char.bubbleOffsetX = 0;
+                            char.bubbleOffsetY = 4.0;
                             if (char.cryBubble && char.cryBubble.sprite) {
                                 char.cryBubble.sprite.renderOrder = 9;
                             }
 
-                            // Pemenang (yang menjatuhkan): bubble digeser ke arah berlawanan dan posisi Y lebih tinggi
-                            killer.bubbleOffsetX = -dir * 1.2;
-                            killer.bubbleOffsetY = 4.95;
+                            // Pemenang (yang menjatuhkan): bubble tepat di tengah pas di karakter
+                            killer.bubbleOffsetX = 0;
+                            killer.bubbleOffsetY = 4.0;
                             if (killer.laughBubble && killer.laughBubble.sprite) {
                                 killer.laughBubble.sprite.renderOrder = 10;
                             }
 
-                            // Tampilkan emote tertawa menang & emote menangis secara berdampingan tanpa menumpuk
+                            // Tampilkan emote tertawa menang & emote menangis
                             killer.setExpression('victory_laugh');
                             killer.showLaughBubble = true;
                             killer.bubbleScale = 0.2;
                             killer.laughBubble.sprite.visible = true;
                             killer.laughBubble.refresh();
                             playSound('laugh'); // SFX Tertawa sfx-haha.mp3!
+                            playSound('victory'); // Fanfare kemenangan C-Major senada!
                             showToast(`😆 ${killer.name} Tertawa Menjatuhkan ${char.name}!`);
                         } else {
                             char.bubbleOffsetX = 0;
-                            char.bubbleOffsetY = 4.2;
+                            char.bubbleOffsetY = 4.0;
                             showToast(`😭 ${char.name} Menangis Tergelincir dari Pulau!`);
                         }
                     }
@@ -1919,7 +2195,7 @@
                         char.cryScale += (2.1 - char.cryScale) * 0.28;
                         char.cryBubble.sprite.scale.set(char.cryScale, char.cryScale, 1);
                         const cryBaseX = char.bubbleOffsetX !== undefined ? char.bubbleOffsetX : 0;
-                        const cryBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 3.5;
+                        const cryBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 4.0;
                         char.cryBubble.sprite.position.set(cryBaseX, cryBaseY, 0);
 
                         // Saat detik-detik terakhir freeze (momen "Gulp!" sesaat sebelum jatuh)
@@ -1950,7 +2226,7 @@
                         if (char.showCryBubble) {
                             char.cryBubble.sprite.scale.set(char.cryScale, char.cryScale, 1);
                             const cryBaseX = char.bubbleOffsetX !== undefined ? char.bubbleOffsetX : 0;
-                            const cryBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 3.5;
+                            const cryBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 4.0;
                             char.cryBubble.sprite.position.set(cryBaseX, cryBaseY, 0);
                         }
 
@@ -1965,9 +2241,7 @@
                     char.group.position.y += char.vy;
 
                     // Hitung ketinggian permukaan rumput dengan kemiringan gyro & floating pulau
-                    const surfaceY = islandGroup.position.y
-                        - (char.group.position.z - islandGroup.position.z) * Math.sin(islandGroup.rotation.x)
-                        + (char.group.position.x - islandGroup.position.x) * Math.sin(islandGroup.rotation.z);
+                    const surfaceY = getIslandSurfaceY(char.group.position.x, char.group.position.z);
 
                     if (char.group.position.y > surfaceY) {
                         char.vy -= 0.016; // Gravitasi normal di atas pulau
@@ -2004,7 +2278,7 @@
                             char.setExpression('normal'); // Kembali ke wajah normal
                             char.showLaughBubble = false;
                             char.bubbleOffsetX = 0;
-                            char.bubbleOffsetY = 4.2;
+                            char.bubbleOffsetY = 4.0;
                         }
                     }
 
@@ -2015,7 +2289,7 @@
                         const wobble = 1 + Math.sin(t * 14) * 0.08;
                         char.laughBubble.sprite.scale.set(char.bubbleScale * wobble, char.bubbleScale * (2 - wobble), 1);
                         const laughBaseX = char.bubbleOffsetX !== undefined ? char.bubbleOffsetX : 0;
-                        const laughBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 4.95;
+                        const laughBaseY = char.bubbleOffsetY !== undefined ? char.bubbleOffsetY : 4.0;
                         char.laughBubble.sprite.position.set(
                             laughBaseX,
                             laughBaseY + Math.sin(t * 8) * 0.15,
