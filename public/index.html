@@ -352,51 +352,55 @@
 
         .sound-toggle-btn {
             position: fixed;
-            top: 24px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 24px;
+            right: 24px;
             z-index: 999;
             background: #FFE66D;
             color: #2D3142;
             border: 3px solid #2D3142;
             border-radius: 50px;
-            padding: 8px 20px;
+            padding: 10px 22px;
             font-family: 'Fredoka', sans-serif;
-            font-size: 0.92rem;
+            font-size: 0.95rem;
             font-weight: 800;
-            box-shadow: 0 5px 0 #2D3142;
+            box-shadow: 0 4px 0 #2D3142, 0 8px 15px rgba(0, 0, 0, 0.12);
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
             animation: pulse-sound 2s infinite ease-in-out;
         }
 
         .sound-toggle-btn:hover {
-            transform: translateX(-50%) scale(1.06);
+            transform: scale(1.06) translateY(-2px);
             background: #FFD93D;
-            box-shadow: 0 7px 0 #2D3142;
+            box-shadow: 0 6px 0 #2D3142, 0 10px 20px rgba(0, 0, 0, 0.16);
+        }
+
+        .sound-toggle-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #2D3142;
         }
 
         .sound-toggle-btn.active {
             animation: none;
             background: #4ECDC4;
             color: #2D3142;
-            padding: 6px 16px;
-            font-size: 0.82rem;
+            padding: 8px 20px;
+            font-size: 0.88rem;
         }
 
         @keyframes pulse-sound {
 
             0%,
             100% {
-                transform: translateX(-50%) scale(1);
+                transform: scale(1);
             }
 
             50% {
-                transform: translateX(-50%) scale(1.06);
-                box-shadow: 0 6px 0 #2D3142, 0 0 16px rgba(255, 230, 109, 0.7);
+                transform: scale(1.06);
+                box-shadow: 0 5px 0 #2D3142, 0 0 16px rgba(255, 230, 109, 0.7);
             }
         }
     </style>
@@ -520,37 +524,532 @@
                 + (x - islandGroup.position.x) * Math.sin(islandGroup.rotation.z);
         }
 
-        // Rumput Hijau Mint
-        const grassGeo = new THREE.CylinderGeometry(10, 9.2, 1.6, 48);
-        const grassMat = new THREE.MeshStandardMaterial({ color: 0x56E39F, roughness: 0.4 });
+        // =========================================================================
+        // PERMUKAAN PULAU HIJAU MINT BERSIH & HALUS
+        // =========================================================================
+        const grassGeo = new THREE.CylinderGeometry(10, 9.2, 1.6, 64);
+        const grassMat = new THREE.MeshStandardMaterial({
+            color: 0x56E39F,
+            roughness: 0.42,
+            metalness: 0.02
+        });
         const grassMesh = new THREE.Mesh(grassGeo, grassMat);
         grassMesh.position.y = -0.8;
         grassMesh.receiveShadow = true;
         islandGroup.add(grassMesh);
 
+
         // Tanah Cokelat Karamel
-        const soilGeo = new THREE.CylinderGeometry(9.2, 6.5, 3.5, 48);
-        const soilMat = new THREE.MeshStandardMaterial({ color: 0xF4A261, roughness: 0.6 });
+        const soilGeo = new THREE.CylinderGeometry(9.2, 6.5, 3.5, 64);
+        const soilMat = new THREE.MeshStandardMaterial({ color: 0xF4A261, roughness: 0.62, metalness: 0.02 });
         const soilMesh = new THREE.Mesh(soilGeo, soilMat);
         soilMesh.position.y = -3.3;
         soilMesh.receiveShadow = true;
         islandGroup.add(soilMesh);
 
-        // Fungsi Membuat Pohon Permen Bulat
+        // =========================================================================
+        // 2B. MODEL POHON PINUS KAYU DARI Tree_1.jpeg (NORDIC WOODEN TOY PINE TREE)
+        // =========================================================================
+
+        // =========================================================================
+        // 2B. TEKSTUR REALISTIS & BUMP MAP POHON DARI Tree_1.jpeg
+        // =========================================================================
+        const treeTexLoader = new THREE.TextureLoader();
+
+        // 1. Tekstur Daun Pinus (Foliage dari Tree_1.jpeg: Cat Hijau Pinus Nordic + Ulir Bubutan)
+        const pineFoliageDiff = treeTexLoader.load('tree_foliage_diffuse.jpg');
+        pineFoliageDiff.wrapS = THREE.RepeatWrapping;
+        pineFoliageDiff.wrapT = THREE.RepeatWrapping;
+        pineFoliageDiff.repeat.set(3, 1.5);
+
+        const pineFoliageBump = treeTexLoader.load('tree_foliage_bump.jpg');
+        pineFoliageBump.wrapS = THREE.RepeatWrapping;
+        pineFoliageBump.wrapT = THREE.RepeatWrapping;
+        pineFoliageBump.repeat.set(3, 1.5);
+
+        // 2. Tekstur Batang Kayu Beech Alami (Trunk dari Tree_1.jpeg: Serat Kayu & Pori-Pori)
+        const pineTrunkDiff = treeTexLoader.load('tree_trunk_diffuse.jpg');
+        pineTrunkDiff.wrapS = THREE.RepeatWrapping;
+        pineTrunkDiff.wrapT = THREE.RepeatWrapping;
+        pineTrunkDiff.repeat.set(2, 1);
+
+        const pineTrunkBump = treeTexLoader.load('tree_trunk_bump.jpg');
+        pineTrunkBump.wrapS = THREE.RepeatWrapping;
+        pineTrunkBump.wrapT = THREE.RepeatWrapping;
+        pineTrunkBump.repeat.set(2, 1);
+
+        // 3. Tekstur Pohon Es Krim Sundae 3-Scoop (Ice Cream Tree)
+        const waffleDiff = treeTexLoader.load('waffle_cone_diffuse.jpg');
+        waffleDiff.wrapS = THREE.RepeatWrapping;
+        waffleDiff.wrapT = THREE.RepeatWrapping;
+        waffleDiff.repeat.set(2, 2);
+
+        const waffleBump = treeTexLoader.load('waffle_cone_bump.jpg');
+        waffleBump.wrapS = THREE.RepeatWrapping;
+        waffleBump.wrapT = THREE.RepeatWrapping;
+        waffleBump.repeat.set(2, 2);
+
+        const iceCreamMintDiff = treeTexLoader.load('icecream_mint_diffuse.jpg');
+        iceCreamMintDiff.wrapS = THREE.RepeatWrapping;
+        iceCreamMintDiff.wrapT = THREE.RepeatWrapping;
+
+        const iceCreamVanillaDiff = treeTexLoader.load('icecream_vanilla_diffuse.jpg');
+        iceCreamVanillaDiff.wrapS = THREE.RepeatWrapping;
+        iceCreamVanillaDiff.wrapT = THREE.RepeatWrapping;
+
+        const iceCreamStrawDiff = treeTexLoader.load('icecream_strawberry_diffuse.jpg');
+        iceCreamStrawDiff.wrapS = THREE.RepeatWrapping;
+        iceCreamStrawDiff.wrapT = THREE.RepeatWrapping;
+
+        const iceCreamBump = treeTexLoader.load('icecream_cream_bump.jpg');
+        iceCreamBump.wrapS = THREE.RepeatWrapping;
+        iceCreamBump.wrapT = THREE.RepeatWrapping;
+        iceCreamBump.repeat.set(3, 3);
+
+        // 4. Tekstur Daun Pohon Cemara Ramping / Cypress Tree (Foliage dari tree_3.jpeg: Cat Hijau Segar)
+        const tree3FoliageDiff = treeTexLoader.load('tree3_foliage_diffuse.jpg');
+        tree3FoliageDiff.wrapS = THREE.RepeatWrapping;
+        tree3FoliageDiff.wrapT = THREE.RepeatWrapping;
+        tree3FoliageDiff.repeat.set(2, 2);
+
+        const tree3FoliageBump = treeTexLoader.load('tree3_foliage_bump.jpg');
+        tree3FoliageBump.wrapS = THREE.RepeatWrapping;
+        tree3FoliageBump.wrapT = THREE.RepeatWrapping;
+        tree3FoliageBump.repeat.set(2, 2);
+
+        // 5. Tekstur Pohon Rimbun Stylized / Puffy Oak Tree (tree_4.jpeg / tree_4.jpg)
+        const tree4FoliageDiff = treeTexLoader.load('tree4_foliage_diffuse.jpg');
+        tree4FoliageDiff.wrapS = THREE.RepeatWrapping;
+        tree4FoliageDiff.wrapT = THREE.RepeatWrapping;
+        tree4FoliageDiff.repeat.set(2, 2);
+
+        const tree4FoliageBump = treeTexLoader.load('tree4_foliage_bump.jpg');
+        tree4FoliageBump.wrapS = THREE.RepeatWrapping;
+        tree4FoliageBump.wrapT = THREE.RepeatWrapping;
+        tree4FoliageBump.repeat.set(2, 2);
+
+        const tree4TrunkDiff = treeTexLoader.load('tree4_trunk_diffuse.jpg');
+        tree4TrunkDiff.wrapS = THREE.RepeatWrapping;
+        tree4TrunkDiff.wrapT = THREE.RepeatWrapping;
+        tree4TrunkDiff.repeat.set(1.5, 1.5);
+
+        const tree4TrunkBump = treeTexLoader.load('tree4_trunk_bump.jpg');
+        tree4TrunkBump.wrapS = THREE.RepeatWrapping;
+        tree4TrunkBump.wrapT = THREE.RepeatWrapping;
+        tree4TrunkBump.repeat.set(1.5, 1.5);
+
+        // 6. Tekstur Taktil Mahkota Pohon Permen (Toy Soft Dimples)
+        const candyFoliageBump = treeTexLoader.load('candy_foliage_bump.jpg');
+        candyFoliageBump.wrapS = THREE.RepeatWrapping;
+        candyFoliageBump.wrapT = THREE.RepeatWrapping;
+        candyFoliageBump.repeat.set(4, 4);
+
+        // Material Batang Kayu Alami (Merespon cahaya matahari & bayangan lembut)
+        const pineTrunkMat = new THREE.MeshStandardMaterial({
+            map: pineTrunkDiff,
+            bumpMap: pineTrunkBump,
+            bumpScale: 0.065, // Guratan serat kayu nyata dari Tree_1.jpeg
+            color: 0xffffff,  // Gunakan warna asli dari foto kayu beech
+            roughness: 0.65,
+            metalness: 0.02
+        });
+
+        // Material Daun Pinus Bertingkat (Tree_1.jpeg)
+        const pineFoliageMat = new THREE.MeshStandardMaterial({
+            map: pineFoliageDiff,
+            bumpMap: pineFoliageBump,
+            bumpScale: 0.045, // Ulir bubutan kayu & pori cat nyata dari Tree_1.jpeg
+            color: 0xffffff,  // Gunakan warna asli dari foto hijau pinus Tree_1.jpeg
+            roughness: 0.48,
+            metalness: 0.03
+        });
+
+        // Material Batang Waffle Cone Renyah
+        const waffleConeMat = new THREE.MeshStandardMaterial({
+            map: waffleDiff,
+            bumpMap: waffleBump,
+            bumpScale: 0.055,
+            roughness: 0.58,
+            metalness: 0.02
+        });
+
+        // Scoop 1 (Bawah): Mint Choco Chip (Es Krim Hijau Muda Segar + Butir Cokelat)
+        const iceCreamMintMat = new THREE.MeshStandardMaterial({
+            map: iceCreamMintDiff,
+            bumpMap: iceCreamBump,
+            bumpScale: 0.025,
+            roughness: 0.38,
+            metalness: 0.01
+        });
+
+        // Scoop 2 (Tengah): French Vanilla with Rainbow Sprinkles (Meises Warna-Warni)
+        const iceCreamVanillaMat = new THREE.MeshStandardMaterial({
+            map: iceCreamVanillaDiff,
+            bumpMap: iceCreamBump,
+            bumpScale: 0.025,
+            roughness: 0.38,
+            metalness: 0.01
+        });
+
+        // Scoop 3 (Atas): Strawberry Gelato Swirl (Es Krim Stroberi Manis)
+        const iceCreamStrawMat = new THREE.MeshStandardMaterial({
+            map: iceCreamStrawDiff,
+            bumpMap: iceCreamBump,
+            bumpScale: 0.025,
+            roughness: 0.36,
+            metalness: 0.01
+        });
+
+        // Krim Kocok Lembut (Whipped Cream dollop)
+        const whippedCreamMat = new THREE.MeshStandardMaterial({
+            color: 0xFFFFFF,
+            roughness: 0.28,
+            metalness: 0.0
+        });
+
+        // Buah Berry Merah Mengkilap di Puncak
+        const berryMat = new THREE.MeshStandardMaterial({
+            color: 0xE6194B, // Merah berry ruby lezat
+            roughness: 0.16,  // Mengkilap juicy
+            metalness: 0.05
+        });
+
+        // Tangkai & Daun Berry
+        const berryStemMat = new THREE.MeshStandardMaterial({
+            color: 0x2DC653, // Hijau segar tangkai
+            roughness: 0.35
+        });
+
+        // Material Daun Pohon Cypress Ramping (tree_3.jpeg)
+        const tree3FoliageMat = new THREE.MeshStandardMaterial({
+            map: tree3FoliageDiff,
+            bumpMap: tree3FoliageBump,
+            bumpScale: 0.042, // Serat kayu cat hijau segar dari tree_3.jpeg
+            color: 0xffffff,
+            roughness: 0.46,
+            metalness: 0.02
+        });
+
+        // Material Mahkota Rimbun Puffy Oak (tree_4.jpeg / tree_4.jpg: Hijau Segar Stylized)
+        const tree4FoliageMat = new THREE.MeshStandardMaterial({
+            map: tree4FoliageDiff,
+            bumpMap: tree4FoliageBump,
+            bumpScale: 0.038,
+            color: 0x54BC42, // Hijau rimbun kartun segar dari tree_4.jpg
+            roughness: 0.42,
+            metalness: 0.02
+        });
+
+        // Material Batang Kayu Hangat Berpohon (tree_4.jpeg: Kayu Cokelat Lembut)
+        const tree4TrunkMat = new THREE.MeshStandardMaterial({
+            map: tree4TrunkDiff,
+            bumpMap: tree4TrunkBump,
+            bumpScale: 0.052,
+            color: 0x8D5834, // Kayu cokelat hangat alami
+            roughness: 0.62,
+            metalness: 0.02
+        });
+
+        // Material Tunas/Semak Daun di Bawah Pohon (tree_4.jpeg)
+        const tree4SproutMat = new THREE.MeshStandardMaterial({
+            color: 0x5EC940,
+            roughness: 0.35,
+            metalness: 0.01
+        });
+
+        // Generator Pohon Pinus Kayu Nordic 3-Tingkat (Model Tree_1.jpeg)
+        function createPineToyTree(x, z, scale = 1.0) {
+            const tree = new THREE.Group();
+
+            // 1. Batang Kayu Silinder (Natural Wood Trunk)
+            const trunkRadius = 0.45;
+            const trunkHeight = 0.88;
+            const trunkGeo = new THREE.CylinderGeometry(trunkRadius, trunkRadius, trunkHeight, 36);
+            const trunkMesh = new THREE.Mesh(trunkGeo, pineTrunkMat);
+            trunkMesh.position.y = trunkHeight / 2; // y = 0.44 (berdiri pas di permukaan rumput)
+            trunkMesh.castShadow = true;
+            trunkMesh.receiveShadow = true;
+            tree.add(trunkMesh);
+
+            // 2. Tingkat 1 / Daun Bawah (Tier 1 Frustum Cone - Lebar)
+            const t1Height = 1.25;
+            const t1RadiusBottom = 1.42;
+            const t1RadiusTop = 0.70;
+            const t1Geo = new THREE.CylinderGeometry(t1RadiusTop, t1RadiusBottom, t1Height, 48);
+            const tier1Mesh = new THREE.Mesh(t1Geo, pineFoliageMat);
+            tier1Mesh.position.y = 0.84 + t1Height / 2; // y = 1.465 (menutupi kepala batang)
+            tier1Mesh.castShadow = true;
+            tier1Mesh.receiveShadow = true;
+            tree.add(tier1Mesh);
+
+            // 3. Tingkat 2 / Daun Tengah (Tier 2 Frustum Cone - Sedang dengan Overhang)
+            // Bagian bawah t2 menonjol keluar dan menimpa bagian atas t1, menghasilkan bayangan bertingkat
+            const t2Height = 1.15;
+            const t2RadiusBottom = 1.12;
+            const t2RadiusTop = 0.48;
+            const t2Geo = new THREE.CylinderGeometry(t2RadiusTop, t2RadiusBottom, t2Height, 48);
+            const tier2Mesh = new THREE.Mesh(t2Geo, pineFoliageMat);
+            tier2Mesh.position.y = 1.92 + t2Height / 2; // y = 2.495 (overlap 0.17 unit di atas tier 1)
+            tier2Mesh.castShadow = true;
+            tier2Mesh.receiveShadow = true;
+            tree.add(tier2Mesh);
+
+            // 4. Tingkat 3 / Daun Puncak (Tier 3 Cone - Tirus dengan Overhang)
+            const t3Height = 1.18;
+            const t3RadiusBottom = 0.80;
+            const t3RadiusTop = 0.04; // Tirus kerucut bubutan kayu
+            const t3Geo = new THREE.CylinderGeometry(t3RadiusTop, t3RadiusBottom, t3Height, 48);
+            const tier3Mesh = new THREE.Mesh(t3Geo, pineFoliageMat);
+            tier3Mesh.position.y = 2.90 + t3Height / 2; // y = 3.49
+            tier3Mesh.castShadow = true;
+            tier3Mesh.receiveShadow = true;
+            tree.add(tier3Mesh);
+
+            // Ujung Puncak Halus Melengkung (Turned Wood Apex Tip)
+            const apexGeo = new THREE.SphereGeometry(0.046, 16, 12);
+            const apexMesh = new THREE.Mesh(apexGeo, pineFoliageMat);
+            apexMesh.position.y = 2.90 + t3Height; // y = 4.08
+            apexMesh.castShadow = true;
+            apexMesh.receiveShadow = true;
+            tree.add(apexMesh);
+
+            // Bayangan Kontak Halus di Pangkal Rumput (Ambient Occlusion Contact Shadow)
+            const shadowCanvas = document.createElement('canvas');
+            shadowCanvas.width = 128;
+            shadowCanvas.height = 128;
+            const sCtx = shadowCanvas.getContext('2d');
+            const grad = sCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(18, 42, 26, 0.48)');
+            grad.addColorStop(0.55, 'rgba(24, 52, 34, 0.22)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            sCtx.fillStyle = grad;
+            sCtx.fillRect(0, 0, 128, 128);
+            const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+            const contactShadow = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.0, 2.0),
+                new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })
+            );
+            contactShadow.rotation.x = -Math.PI / 2;
+            contactShadow.position.y = 0.015;
+            tree.add(contactShadow);
+
+            if (scale !== 1.0) {
+                tree.scale.set(scale, scale, scale);
+            }
+
+            tree.position.set(x, 0, z);
+            islandGroup.add(tree);
+            return tree;
+        }
+
+        // Generator Pohon Ice Cream Sundae 3-Scoop dengan Buah Berry di Puncak (Model tree_2.jpeg)
+        function createBulbousToyTree(x, z, scale = 1.0) {
+            const tree = new THREE.Group();
+
+            // 1. Batang Cone Waffle Renyah (Waffle Cone Trunk)
+            const trunkRadius = 0.42;
+            const trunkHeight = 0.85;
+            const trunkGeo = new THREE.CylinderGeometry(trunkRadius, trunkRadius, trunkHeight, 32);
+            const trunkMesh = new THREE.Mesh(trunkGeo, waffleConeMat);
+            trunkMesh.position.y = trunkHeight / 2; // y = 0.425
+            trunkMesh.castShadow = true;
+            trunkMesh.receiveShadow = true;
+            tree.add(trunkMesh);
+
+            // 2. Scoop 1 / Bawah: Mint Choco Chip (Es Krim Hijau Muda Segar + Butir Cokelat)
+            const t1Geo = new THREE.SphereGeometry(1.35, 36, 24);
+            const t1Mesh = new THREE.Mesh(t1Geo, iceCreamMintMat);
+            t1Mesh.scale.set(1.0, 0.70, 1.0);
+            t1Mesh.position.y = 1.72; // Duduk pas di atas cone waffle
+            t1Mesh.castShadow = true;
+            t1Mesh.receiveShadow = true;
+            tree.add(t1Mesh);
+
+            // 3. Scoop 2 / Tengah: Sweet Vanilla with Rainbow Sprinkles (Meises Warna-Warni)
+            const t2Geo = new THREE.SphereGeometry(1.12, 36, 24);
+            const t2Mesh = new THREE.Mesh(t2Geo, iceCreamVanillaMat);
+            t2Mesh.scale.set(1.0, 0.74, 1.0);
+            t2Mesh.position.y = 2.70; // Bertumpuk lezat di scoop 1
+            t2Mesh.castShadow = true;
+            t2Mesh.receiveShadow = true;
+            tree.add(t2Mesh);
+
+            // 4. Scoop 3 / Atas: Strawberry Gelato Swirl (Es Krim Stroberi Manis)
+            const t3Geo = new THREE.SphereGeometry(0.92, 36, 24);
+            const t3Mesh = new THREE.Mesh(t3Geo, iceCreamStrawMat);
+            t3Mesh.scale.set(1.0, 0.94, 1.0);
+            t3Mesh.position.y = 3.75; // Kubah es krim puncak
+            t3Mesh.castShadow = true;
+            t3Mesh.receiveShadow = true;
+            tree.add(t3Mesh);
+
+            // 5. Whipped Cream (Krim Kocok Lembut di Bawah Berry)
+            const whipGeo = new THREE.CylinderGeometry(0.14, 0.44, 0.18, 16);
+            const whipMesh = new THREE.Mesh(whipGeo, whippedCreamMat);
+            whipMesh.position.y = 4.62;
+            whipMesh.castShadow = true;
+            whipMesh.receiveShadow = true;
+            tree.add(whipMesh);
+
+            // 6. Buah Berry Juicy Mengkilap di Puncak Es Krim (Cherry / Strawberry Berry)
+            const berryGroup = new THREE.Group();
+            berryGroup.position.y = 4.88;
+
+            const berryGeo = new THREE.SphereGeometry(0.32, 28, 24);
+            const berryMesh = new THREE.Mesh(berryGeo, berryMat);
+            berryMesh.scale.set(1.0, 1.14, 1.0); // Sedikit tirus seperti buah berry matang
+            berryMesh.castShadow = true;
+            berryMesh.receiveShadow = true;
+            berryGroup.add(berryMesh);
+
+            // Kelopak Daun Bintang di Pangkal Tangkai Berry (Calyx)
+            const leafGeo = new THREE.ConeGeometry(0.065, 0.20, 5);
+            for (let i = 0; i < 5; i++) {
+                const leaf = new THREE.Mesh(leafGeo, berryStemMat);
+                const ang = (i / 5) * Math.PI * 2;
+                leaf.position.set(Math.cos(ang) * 0.10, 0.26, Math.sin(ang) * 0.10);
+                leaf.rotation.x = Math.sin(ang) * 0.65;
+                leaf.rotation.z = -Math.cos(ang) * 0.65;
+                leaf.castShadow = true;
+                berryGroup.add(leaf);
+            }
+
+            // Tangkai Berry Melengkung Genit (Curved Berry Stem)
+            const stemCurve = new THREE.CubicBezierCurve3(
+                new THREE.Vector3(0, 0.30, 0),
+                new THREE.Vector3(0.04, 0.48, 0.02),
+                new THREE.Vector3(0.12, 0.60, -0.04),
+                new THREE.Vector3(0.18, 0.68, -0.06)
+            );
+            const stemGeo = new THREE.TubeGeometry(stemCurve, 12, 0.028, 8, false);
+            const stemMesh = new THREE.Mesh(stemGeo, berryStemMat);
+            stemMesh.castShadow = true;
+            berryGroup.add(stemMesh);
+
+            tree.add(berryGroup);
+
+            // Bayangan Kontak Halus di Pangkal Rumput
+            const shadowCanvas = document.createElement('canvas');
+            shadowCanvas.width = 128; shadowCanvas.height = 128;
+            const sCtx = shadowCanvas.getContext('2d');
+            const grad = sCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(18, 42, 26, 0.48)');
+            grad.addColorStop(0.55, 'rgba(24, 52, 34, 0.22)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            sCtx.fillStyle = grad;
+            sCtx.fillRect(0, 0, 128, 128);
+            const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+            const contactShadow = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.0, 2.0),
+                new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })
+            );
+            contactShadow.rotation.x = -Math.PI / 2;
+            contactShadow.position.y = 0.015;
+            tree.add(contactShadow);
+
+            if (scale !== 1.0) tree.scale.set(scale, scale, scale);
+            tree.position.set(x, 0, z);
+            islandGroup.add(tree);
+            return tree;
+        }
+
+        // Generator Pohon Cemara Ramping / Cypress Toy Tree (Model tree_3.jpeg)
+        function createCypressToyTree(x, z, scale = 1.0) {
+            const tree = new THREE.Group();
+
+            // 1. Batang Kayu Silinder
+            const trunkRadius = 0.38;
+            const trunkHeight = 0.85;
+            const trunkGeo = new THREE.CylinderGeometry(trunkRadius, trunkRadius, trunkHeight, 32);
+            const trunkMesh = new THREE.Mesh(trunkGeo, pineTrunkMat);
+            trunkMesh.position.y = trunkHeight / 2;
+            trunkMesh.castShadow = true;
+            trunkMesh.receiveShadow = true;
+            tree.add(trunkMesh);
+
+            // 2. Badan Kerucut Ramping Tirus (Tapered Slender Cone)
+            const bodyHeight = 3.0;
+            const bodyGeo = new THREE.CylinderGeometry(0.18, 1.15, bodyHeight, 48);
+            const bodyMesh = new THREE.Mesh(bodyGeo, tree3FoliageMat);
+            bodyMesh.position.y = 0.82 + bodyHeight / 2; // y = 2.32
+            bodyMesh.castShadow = true;
+            bodyMesh.receiveShadow = true;
+            tree.add(bodyMesh);
+
+            // 3. Ujung Peluru Halus / Parabolik (Parabolic Bullet Apex Tip)
+            const apexGeo = new THREE.SphereGeometry(0.18, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+            const apexMesh = new THREE.Mesh(apexGeo, tree3FoliageMat);
+            apexMesh.scale.set(1.0, 1.9, 1.0);
+            apexMesh.position.y = 0.82 + bodyHeight; // y = 3.82
+            apexMesh.castShadow = true;
+            apexMesh.receiveShadow = true;
+            tree.add(apexMesh);
+
+            // 4. Bibir Bawah Melengkung (Bottom Undercut Lip)
+            const lipGeo = new THREE.TorusGeometry(1.12, 0.035, 12, 48);
+            const lipMesh = new THREE.Mesh(lipGeo, tree3FoliageMat);
+            lipMesh.rotation.x = Math.PI / 2;
+            lipMesh.position.y = 0.84;
+            lipMesh.castShadow = true;
+            lipMesh.receiveShadow = true;
+            tree.add(lipMesh);
+
+            // Bayangan Kontak
+            const shadowCanvas = document.createElement('canvas');
+            shadowCanvas.width = 128; shadowCanvas.height = 128;
+            const sCtx = shadowCanvas.getContext('2d');
+            const grad = sCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(18, 42, 26, 0.48)');
+            grad.addColorStop(0.55, 'rgba(24, 52, 34, 0.22)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            sCtx.fillStyle = grad;
+            sCtx.fillRect(0, 0, 128, 128);
+            const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+            const contactShadow = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.8, 1.8),
+                new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })
+            );
+            contactShadow.rotation.x = -Math.PI / 2;
+            contactShadow.position.y = 0.015;
+            tree.add(contactShadow);
+
+            if (scale !== 1.0) tree.scale.set(scale, scale, scale);
+            tree.position.set(x, 0, z);
+            islandGroup.add(tree);
+            return tree;
+        }
+
+        // Fungsi Membuat Pohon Permen Bulat Bertekstur
         function createCuteTree(x, z, foliageColor) {
             const tree = new THREE.Group();
+
+            // Batang dengan tekstur serat kayu hangat
+            const trunkMat = new THREE.MeshStandardMaterial({
+                map: pineTrunkDiff,
+                bumpMap: pineTrunkBump,
+                bumpScale: 0.04,
+                color: 0xE76F51, // Terracotta wood
+                roughness: 0.68
+            });
             const trunk = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.25, 0.4, 1.6, 16),
-                new THREE.MeshStandardMaterial({ color: 0xE76F51, roughness: 0.7 })
+                new THREE.CylinderGeometry(0.25, 0.4, 1.6, 24),
+                trunkMat
             );
             trunk.position.y = 0.8;
             trunk.castShadow = true;
             trunk.receiveShadow = true;
             tree.add(trunk);
 
+            // Mahkota dengan tekstur taktil mainan jeli/permen lembut
+            const foliageMat = new THREE.MeshStandardMaterial({
+                bumpMap: candyFoliageBump,
+                bumpScale: 0.026,
+                color: foliageColor,
+                roughness: 0.38
+            });
             const foliage = new THREE.Mesh(
-                new THREE.SphereGeometry(1.15, 24, 24),
-                new THREE.MeshStandardMaterial({ color: foliageColor, roughness: 0.35 })
+                new THREE.SphereGeometry(1.15, 32, 32),
+                foliageMat
             );
             foliage.position.y = 2.1;
             foliage.castShadow = true;
@@ -561,10 +1060,223 @@
             islandGroup.add(tree);
         }
 
-        createCuteTree(-6.5, -4, 0xFF6B9D); // Pohon Pink
-        createCuteTree(6.8, -3.5, 0xFFE66D); // Pohon Kuning
-        createCuteTree(-5, 5.5, 0x4ECDC4);  // Pohon Mint
-        createCuteTree(5.5, 5, 0xFF9F1C);   // Pohon Oranye
+        // Generator Pohon Rimbun Stylized / Puffy Oak Tree (Model tree_4.jpeg / tree_4.jpg)
+        function createPuffyOakToyTree(x, z, scale = 1.0) {
+            const tree = new THREE.Group();
+
+            // 1. Bayangan Kontak Lembut di Bawah Pohon (Soft Contact Shadow)
+            const shadowCanvas = document.createElement('canvas');
+            shadowCanvas.width = 128; shadowCanvas.height = 128;
+            const sCtx = shadowCanvas.getContext('2d');
+            const grad = sCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(15, 38, 20, 0.50)');
+            grad.addColorStop(0.55, 'rgba(20, 48, 28, 0.22)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            sCtx.fillStyle = grad;
+            sCtx.fillRect(0, 0, 128, 128);
+            const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+            const contactShadow = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.8, 2.8),
+                new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })
+            );
+            contactShadow.rotation.x = -Math.PI / 2;
+            contactShadow.position.y = 0.015;
+            tree.add(contactShadow);
+
+            // 2. Pangkal Akar Batang Melebar ke Tanah (Flared Root Base dari tree_4.jpg)
+            const rootHeight = 0.45;
+            const rootGeo = new THREE.CylinderGeometry(0.38, 0.62, rootHeight, 32);
+            const rootMesh = new THREE.Mesh(rootGeo, tree4TrunkMat);
+            rootMesh.position.y = rootHeight / 2; // y = 0.225
+            rootMesh.castShadow = true;
+            rootMesh.receiveShadow = true;
+            tree.add(rootMesh);
+
+            // 3. Batang Utama Silindris Tirus (Main Trunk Shaft)
+            const trunkHeight = 1.35;
+            const trunkGeo = new THREE.CylinderGeometry(0.32, 0.38, trunkHeight, 32);
+            const trunkMesh = new THREE.Mesh(trunkGeo, tree4TrunkMat);
+            trunkMesh.position.y = rootHeight + trunkHeight / 2; // y = 1.125
+            trunkMesh.castShadow = true;
+            trunkMesh.receiveShadow = true;
+            tree.add(trunkMesh);
+
+            // 4. Cabang-Cabang Penopang Mahkota (Upper Trunk Branches dari tree_4.jpg)
+            // Cabang Kanan
+            const branch1Geo = new THREE.CylinderGeometry(0.16, 0.24, 0.85, 20);
+            const branch1 = new THREE.Mesh(branch1Geo, tree4TrunkMat);
+            branch1.position.set(0.28, 1.72, 0.15);
+            branch1.rotation.z = -0.42;
+            branch1.rotation.x = 0.16;
+            branch1.castShadow = true;
+            branch1.receiveShadow = true;
+            tree.add(branch1);
+
+            // Cabang Kiri
+            const branch2Geo = new THREE.CylinderGeometry(0.15, 0.22, 0.78, 20);
+            const branch2 = new THREE.Mesh(branch2Geo, tree4TrunkMat);
+            branch2.position.set(-0.25, 1.70, -0.12);
+            branch2.rotation.z = 0.44;
+            branch2.rotation.x = -0.18;
+            branch2.castShadow = true;
+            branch2.receiveShadow = true;
+            tree.add(branch2);
+
+            // 5. Mahkota Rimbun Awan / Puffy Cloud Clusters (overlapping spherical lobes dari tree_4.jpg)
+            const canopyGroup = new THREE.Group();
+            const lobes = [
+                // [x, y, z, radius, scaleX, scaleY, scaleZ]
+                { pos: [0, 2.75, 0], r: 1.05, s: [1.02, 0.96, 1.02] },          // Mahkota puncak utama
+                { pos: [0.18, 2.38, 0.78], r: 0.90, s: [1.0, 0.92, 0.96] },    // Lobe depan
+                { pos: [-0.18, 2.42, -0.75], r: 0.88, s: [0.98, 0.90, 0.95] }, // Lobe belakang
+                { pos: [0.82, 2.35, 0.12], r: 0.92, s: [0.95, 0.94, 0.98] },   // Lobe samping kanan
+                { pos: [-0.80, 2.36, -0.10], r: 0.92, s: [0.96, 0.92, 0.96] }, // Lobe samping kiri
+                { pos: [0.65, 1.95, 0.62], r: 0.72, s: [0.94, 0.90, 0.94] },   // Lobe bawah kanan-depan
+                { pos: [-0.62, 1.96, -0.58], r: 0.70, s: [0.94, 0.90, 0.94] }, // Lobe bawah kiri-belakang
+                { pos: [-0.58, 2.02, 0.58], r: 0.68, s: [0.92, 0.88, 0.92] },  // Lobe bawah kiri-depan
+                { pos: [0.56, 2.00, -0.62], r: 0.68, s: [0.92, 0.88, 0.92] }   // Lobe bawah kanan-belakang
+            ];
+
+            lobes.forEach(l => {
+                const puffGeo = new THREE.SphereGeometry(l.r, 32, 24);
+                const puffMesh = new THREE.Mesh(puffGeo, tree4FoliageMat);
+                puffMesh.position.set(l.pos[0], l.pos[1], l.pos[2]);
+                puffMesh.scale.set(l.s[0], l.s[1], l.s[2]);
+                puffMesh.castShadow = true;
+                puffMesh.receiveShadow = true;
+                canopyGroup.add(puffMesh);
+            });
+            tree.add(canopyGroup);
+
+            // 6. Semak Tunas Daun di Pangkal Pohon (Sprout Tuft Clusters dari tree_4.jpg)
+            const sproutAngles = [0.45, 2.55, 4.40];
+            sproutAngles.forEach(baseAng => {
+                const sDist = 0.52;
+                const sx = Math.cos(baseAng) * sDist;
+                const sz = Math.sin(baseAng) * sDist;
+                for (let k = -1; k <= 1; k++) {
+                    const leafGeo = new THREE.SphereGeometry(0.14, 16, 12);
+                    const leafMesh = new THREE.Mesh(leafGeo, tree4SproutMat);
+                    leafMesh.scale.set(0.45, 1.4, 0.7);
+                    leafMesh.position.set(sx + k * 0.08, 0.12, sz + k * 0.04);
+                    leafMesh.rotation.y = baseAng + k * 0.35;
+                    leafMesh.rotation.z = 0.45;
+                    leafMesh.castShadow = true;
+                    leafMesh.receiveShadow = true;
+                    tree.add(leafMesh);
+                }
+            });
+
+            if (scale !== 1.0) tree.scale.set(scale, scale, scale);
+            tree.position.set(x, 0, z);
+            islandGroup.add(tree);
+            return tree;
+        }
+
+        // Penempatan Pohon di Pulau (Tree 1, Tree 2, Tree 3 & Tree 4):
+        const puffyOakTreeObj = createPuffyOakToyTree(-6.5, -4, 1.0); // Pohon Rimbun Puffy Oak (tree_4.jpg - Kiri Belakang)
+        const cypressTreeObj = createCypressToyTree(6.8, -3.5, 1.0); // Pohon Cemara Ramping Nordic (tree_3.jpeg - Kanan Belakang)
+        const pineTreeObj = createPineToyTree(-5, 5.5, 1.0); // Pohon Pinus Kayu Nordic (Tree_1.jpeg - Kiri Depan)
+        const bulbousTreeObj = createBulbousToyTree(5.5, 5, 1.0); // Pohon Awan/Bulat Bertingkat (tree_2.jpeg - Kanan Depan)
+
+        // Variabel goyangan interaktif saat tertabrak pemain
+        let puffyOakTreeWobble = 0;
+        let pineTreeWobble = 0;
+        let bulbousTreeWobble = 0;
+        let cypressTreeWobble = 0;
+
+        // =========================================================================
+        // 2C. DETAIL ALAM PULAU: JAMUR & BATU KERIKIL (NATURE DETAILS)
+        // =========================================================================
+
+        const natureMatCache = {};
+        function getNatureMaterial(colorHex, roughness = 0.35) {
+            const key = colorHex + '_' + roughness;
+            if (!natureMatCache[key]) {
+                natureMatCache[key] = new THREE.MeshStandardMaterial({
+                    color: colorHex,
+                    roughness: roughness,
+                    metalness: 0.02
+                });
+            }
+            return natureMatCache[key];
+        }
+
+        // Jamur Dongeng Lucu (Anti-Tree Clipping)
+        function createMushroom(x, z, scale = 1.0, isRed = true) {
+            const shroom = new THREE.Group();
+            shroom.position.set(x, 0.005, z);
+
+            const stemGeo = new THREE.CylinderGeometry(0.06, 0.09, 0.24, 12);
+            const mStemMat = getNatureMaterial(0xFFF1E6, 0.50);
+            const mStem = new THREE.Mesh(stemGeo, mStemMat);
+            mStem.position.y = 0.12;
+            mStem.castShadow = true;
+            shroom.add(mStem);
+
+            const capColor = isRed ? 0xE63946 : 0xF4A261;
+            const capGeo = new THREE.SphereGeometry(0.18, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+            const capMat = getNatureMaterial(capColor, 0.30);
+            const cap = new THREE.Mesh(capGeo, capMat);
+            cap.position.y = 0.20;
+            cap.scale.set(1.0, 0.95, 1.0);
+            cap.castShadow = true;
+            shroom.add(cap);
+
+            if (isRed) {
+                const dotMat = getNatureMaterial(0xFFFFFF, 0.30);
+                const dots = [
+                    { x: 0, y: 0.37, z: 0, r: 0.032 },
+                    { x: 0.09, y: 0.32, z: 0.06, r: 0.025 },
+                    { x: -0.08, y: 0.33, z: -0.07, r: 0.025 },
+                    { x: -0.09, y: 0.31, z: 0.06, r: 0.022 },
+                    { x: 0.08, y: 0.32, z: -0.07, r: 0.022 },
+                ];
+                dots.forEach(d => {
+                    const dot = new THREE.Mesh(new THREE.SphereGeometry(d.r, 8, 8), dotMat);
+                    dot.position.set(d.x, d.y, d.z);
+                    shroom.add(dot);
+                });
+            }
+
+            if (scale !== 1.0) shroom.scale.set(scale, scale, scale);
+            islandGroup.add(shroom);
+            return shroom;
+        }
+
+        // Batu Kerikil Halus (Anti-Ground Z-fighting)
+        function createPebble(x, z, scale = 1.0) {
+            const pebbleGeo = new THREE.SphereGeometry(0.15, 8, 6);
+            const pCols = [0xC5BAAF, 0xDAD2C8, 0xB0A89F, 0xE3DDD5];
+            const pebbleMat = getNatureMaterial(pCols[Math.floor(Math.random() * pCols.length)], 0.70);
+            const pebble = new THREE.Mesh(pebbleGeo, pebbleMat);
+            pebble.scale.set(0.24, 0.09, 0.18);
+            pebble.position.set(x, 0.035, z);
+            pebble.rotation.y = Math.random() * Math.PI;
+            pebble.receiveShadow = true;
+            if (scale !== 1.0) pebble.scale.multiplyScalar(scale);
+            islandGroup.add(pebble);
+            return pebble;
+        }
+
+        // Jamur & Kerikil di Sekitar Pohon
+        // 1. Oak
+        createMushroom(-4.8, -3.2, 1.0, true);
+        createMushroom(-5.2, -5.2, 0.85, false);
+        createPebble(-4.2, -4.8, 1.1);
+
+        // 2. Cypress
+        createMushroom(5.4, -4.5, 0.95, false);
+        createPebble(5.5, -2.8, 1.0);
+
+        // 3. Pinus
+        createMushroom(-3.6, 6.7, 0.95, true);
+        createMushroom(-6.4, 4.4, 0.80, false);
+        createPebble(-3.8, 4.2, 1.0);
+
+        // 4. Es Krim
+        createMushroom(4.0, 5.8, 0.90, true);
+        createPebble(4.5, 3.8, 1.1);
 
         // =========================================================================
         // 3. FUNGSI PEMBUAT KARAKTER 3D LUCU + LABEL NAMA DI ATAS KEPALA
@@ -1856,10 +2568,10 @@
 
         // Pohon sebagai rintangan tabrakan
         const trees = [
-            { x: -6.5, z: -4, r: 0.8 },
-            { x: 6.8, z: -3.5, r: 0.8 },
-            { x: -5, z: 5.5, r: 0.8 },
-            { x: 5.5, z: 5, r: 0.8 }
+            { x: -6.5, z: -4, r: 1.15, isPuffyOak: true },  // Pohon Rimbun Puffy Oak dari tree_4.jpg
+            { x: 6.8, z: -3.5, r: 1.0, isCypress: true },   // Pohon Cypress Ramping dari tree_3.jpeg
+            { x: -5, z: 5.5, r: 1.15, isPine: true },       // Pohon Pinus Kayu Nordic dari Tree_1.jpeg
+            { x: 5.5, z: 5, r: 1.15, isBulbous: true }      // Pohon Awan/Bulbous dari tree_2.jpeg
         ];
 
         function animate() {
@@ -1881,6 +2593,52 @@
             camera.position.x = mouseX * 2.2;
             camera.position.y = 14 - mouseY * 1.6;
             camera.lookAt(0, 1, 0);
+
+            // Animasi Dinamis Pohon-Pohon Kayu Nordic & Stylized (Tree 1, Tree 2, Tree 3, Tree 4)
+            // 1. Pohon Pinus (Tree_1.jpeg)
+            if (pineTreeObj) {
+                if (pineTreeWobble > 0.002) {
+                    pineTreeWobble *= 0.90;
+                    pineTreeObj.rotation.z = Math.sin(t * 22) * pineTreeWobble * 0.12;
+                    pineTreeObj.rotation.x = Math.cos(t * 22) * pineTreeWobble * 0.10;
+                } else {
+                    pineTreeObj.rotation.z = Math.sin(t * 1.5) * 0.012;
+                    pineTreeObj.rotation.x = Math.cos(t * 1.2) * 0.008;
+                }
+            }
+            // 2. Pohon Awan/Bulbous (tree_2.jpeg)
+            if (bulbousTreeObj) {
+                if (bulbousTreeWobble > 0.002) {
+                    bulbousTreeWobble *= 0.90;
+                    bulbousTreeObj.rotation.z = Math.sin(t * 20) * bulbousTreeWobble * 0.12;
+                    bulbousTreeObj.rotation.x = Math.cos(t * 20) * bulbousTreeWobble * 0.10;
+                } else {
+                    bulbousTreeObj.rotation.z = Math.sin(t * 1.6 + 1.0) * 0.011;
+                    bulbousTreeObj.rotation.x = Math.cos(t * 1.3 + 0.5) * 0.008;
+                }
+            }
+            // 3. Pohon Cypress Ramping (tree_3.jpeg)
+            if (cypressTreeObj) {
+                if (cypressTreeWobble > 0.002) {
+                    cypressTreeWobble *= 0.90;
+                    cypressTreeObj.rotation.z = Math.sin(t * 24) * cypressTreeWobble * 0.14;
+                    cypressTreeObj.rotation.x = Math.cos(t * 24) * cypressTreeWobble * 0.11;
+                } else {
+                    cypressTreeObj.rotation.z = Math.sin(t * 1.4 + 2.0) * 0.014;
+                    cypressTreeObj.rotation.x = Math.cos(t * 1.1 + 1.5) * 0.009;
+                }
+            }
+            // 4. Pohon Rimbun Puffy Oak (tree_4.jpg)
+            if (puffyOakTreeObj) {
+                if (puffyOakTreeWobble > 0.002) {
+                    puffyOakTreeWobble *= 0.90;
+                    puffyOakTreeObj.rotation.z = Math.sin(t * 19) * puffyOakTreeWobble * 0.11;
+                    puffyOakTreeObj.rotation.x = Math.cos(t * 19) * puffyOakTreeWobble * 0.09;
+                } else {
+                    puffyOakTreeObj.rotation.z = Math.sin(t * 1.35 + 3.14) * 0.011;
+                    puffyOakTreeObj.rotation.x = Math.cos(t * 1.15 + 2.0) * 0.008;
+                }
+            }
 
             // -----------------------------------------------------------------
             // DYNAMIC LIVING SHADOW: Posisi Sumber Cahaya Mengikuti Gyro Mouse
@@ -2004,6 +2762,18 @@
                         c.jellyJiggle = 0.8;
                         createSkidPuff(c.group.position.x, 0.25, c.group.position.z);
                         createImpactEffect(c.group.position.x, 0.9, c.group.position.z);
+                        if (tr.isPine) {
+                            pineTreeWobble = 0.35;
+                        }
+                        if (tr.isBulbous) {
+                            bulbousTreeWobble = 0.35;
+                        }
+                        if (tr.isCypress) {
+                            cypressTreeWobble = 0.35;
+                        }
+                        if (tr.isPuffyOak) {
+                            puffyOakTreeWobble = 0.35;
+                        }
                     }
                 });
             });

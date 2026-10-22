@@ -9,8 +9,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Sajikan file statis dari folder 'public'
+// Sajikan file statis dari folder 'public' dan 'Assets'
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'Assets')));
+app.use('/Assets', express.static(path.join(__dirname, 'Assets')));
 
 // Fungsi otomatis mencari IP Address Wi-Fi Laptop untuk QR Code
 function getLocalIP() {
